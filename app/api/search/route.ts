@@ -1,0 +1,30 @@
+import { NextResponse } from "next/server";
+import { embedQuery } from "@/lib/embed";
+import { synthesizeMatches } from "@/lib/claude";
+import { getSupabaseClient } from "@/lib/supabase";
+import type { CrItemMatch } from "@/lib/types";
+
+const MATCH_COUNT = 10;
+
+export async function POST(request: Request) {
+  const { query } = (await request.json()) as { query?: string };
+  if (!query || !query.trim()) {
+    return NextResponse.json({ error: "query is required" }, { status: 400 });
+  }
+
+  const supabase = getSupabaseClient();
+  const queryEmbedding = await embedQuery(query);
+
+  const { data, error } = await supabase.rpc("match_cr_items", {
+    query_embedding: queryEmbedding,
+    match_count: MATCH_COUNT,
+  });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  const matches = (data ?? []) as CrItemMatch[];
+  const synthesis = await synthesizeMatches(query, matches);
+
+  return NextResponse.json({ matches, synthesis });
+}
