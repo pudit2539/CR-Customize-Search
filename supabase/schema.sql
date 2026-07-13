@@ -124,3 +124,75 @@ insert into md_rates (role, rate) values
   ('dev_senior_mgr', 7000),
   ('manager', 8000)
 on conflict (role) do nothing;
+
+-- Private bucket for the original Excel files uploaded via /import, so the
+-- team can download the source document a CR item came from, not just the
+-- extracted fields.
+insert into storage.buckets (id, name, public)
+values ('import-files', 'import-files', false)
+on conflict (id) do nothing;
+
+create table if not exists import_batches (
+  id uuid primary key default gen_random_uuid(),
+  filename text not null,
+  storage_path text not null,
+  uploaded_by text,
+  item_count int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- Nullable: manually-added and AI-extracted items have no source file, and
+-- rows imported before this feature existed have nothing to backfill to.
+alter table cr_items add column if not exists import_batch_id uuid references import_batches(id) on delete set null;
+
+-- Re-declare match_cr_items to also surface which file (if any) an item came
+-- from, so search results can offer a "download original file" link without
+-- an extra round trip.
+-- Also drops a stray 2-arg overload left over from before filter_source_type
+-- was added (an early `create or replace` used a different signature, so it
+-- never actually replaced the original — Postgres just kept both). The app
+-- always calls with all 3 named args so it was never affected, but a bare
+-- 2-arg call is ambiguous between the two and should only ever match one.
+drop function if exists match_cr_items(vector, int);
+drop function if exists match_cr_items(vector, int, text);
+
+create function match_cr_items(
+  query_embedding vector(512),
+  match_count int default 10,
+  filter_source_type text default null
+)
+returns table (
+  id uuid,
+  source_type text,
+  item_no int,
+  module text,
+  detail text,
+  md_breakdown jsonb,
+  md_summary numeric,
+  cost numeric,
+  project text,
+  industry text,
+  check_note text,
+  priority text,
+  remark text,
+  timeline_followup text,
+  presale_note text,
+  import_batch_id uuid,
+  source_filename text,
+  similarity float
+)
+language sql stable
+as $$
+  select
+    cr.id, cr.source_type, cr.item_no, cr.module, cr.detail, cr.md_breakdown,
+    cr.md_summary, cr.cost, cr.project, cr.industry, cr.check_note, cr.priority,
+    cr.remark, cr.timeline_followup, cr.presale_note, cr.import_batch_id,
+    ib.filename as source_filename,
+    1 - (cr.embedding <=> query_embedding) as similarity
+  from cr_items cr
+  left join import_batches ib on ib.id = cr.import_batch_id
+  where cr.embedding is not null
+    and (filter_source_type is null or cr.source_type = filter_source_type)
+  order by cr.embedding <=> query_embedding
+  limit match_count;
+$$;

@@ -25,6 +25,10 @@ export interface CrItemRow {
   remark: string | null;
   timeline_followup: string | null;
   presale_note: string | null;
+  // Which /import upload this row came from, if any — null for manual/AI-
+  // extracted items and anything imported before this field existed.
+  import_batch_id?: string | null;
+  source_filename?: string | null;
   created_at?: string;
   updated_at?: string;
 }

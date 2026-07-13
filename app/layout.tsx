@@ -40,6 +40,9 @@ export default async function RootLayout({
                 <a href="/" className="text-zinc-600 hover:text-zinc-950">
                   ค้นหา
                 </a>
+                <a href="/dashboard" className="text-zinc-600 hover:text-zinc-950">
+                  Dashboard
+                </a>
                 <a href="/items" className="text-zinc-600 hover:text-zinc-950">
                   รายการทั้งหมด
                 </a>

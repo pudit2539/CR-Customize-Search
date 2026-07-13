@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   let query = supabase
     .from("cr_items")
     .select(
-      "id, source_type, item_no, module, detail, md_breakdown, md_summary, cost, project, industry, check_note, priority, remark, timeline_followup, presale_note, created_at, updated_at"
+      "id, source_type, item_no, module, detail, md_breakdown, md_summary, cost, project, industry, check_note, priority, remark, timeline_followup, presale_note, import_batch_id, created_at, updated_at, import_batches(filename)"
     )
     .order("item_no", { ascending: true });
 
@@ -31,7 +31,16 @@ export async function GET(request: Request) {
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ items: data ?? [] });
+
+  // Flatten the embedded import_batches(filename) join into a plain field —
+  // the UI just wants "was this imported from a file, and what's its name."
+  const items = (data ?? []).map((row) => {
+    const { import_batches, ...rest } = row as typeof row & {
+      import_batches: { filename: string } | null;
+    };
+    return { ...rest, source_filename: import_batches?.filename ?? null };
+  });
+  return NextResponse.json({ items });
 }
 
 export async function POST(request: Request) {

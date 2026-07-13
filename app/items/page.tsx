@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import ItemDetailModal from "@/components/ItemDetailModal";
 import ItemFormModal from "@/components/ItemFormModal";
 import { allCategories, categoryOf } from "@/lib/moduleCategories";
@@ -12,10 +13,13 @@ const MODE_LABEL: Record<string, string> = {
 };
 
 export default function ItemsPage() {
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<CrItemRow[]>([]);
   const [keyword, setKeyword] = useState("");
-  const [sourceType, setSourceType] = useState("");
-  const [category, setCategory] = useState("");
+  // Pre-applied when arriving from a dashboard bar click
+  // (/items?category=...&source_type=...).
+  const [sourceType, setSourceType] = useState(searchParams.get("source_type") ?? "");
+  const [category, setCategory] = useState(searchParams.get("category") ?? "");
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<CrItemRow>>({});

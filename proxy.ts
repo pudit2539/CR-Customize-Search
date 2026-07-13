@@ -11,7 +11,11 @@ const PUBLIC_PATHS = new Set(["/login", "/api/auth/login", "/api/auth/logout"]);
 function isAdminOnly(pathname: string, method: string): boolean {
   if (pathname === "/import") return true;
   if (pathname === "/settings") return true;
-  if (pathname.startsWith("/api/import")) return true;
+  // Exact/nested match only — a bare startsWith("/api/import") also matches
+  // /api/import-batches/... (string prefix, not a path prefix), which must
+  // stay open to any logged-in role since downloading a reference file is
+  // viewing, not mutating.
+  if (pathname === "/api/import" || pathname.startsWith("/api/import/")) return true;
   if (pathname.startsWith("/api/export")) return true;
   if (pathname.startsWith("/api/items") && method !== "GET") return true;
   if (pathname.startsWith("/api/settings") && method !== "GET") return true;

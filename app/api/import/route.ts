@@ -41,6 +41,30 @@ export async function POST(request: Request) {
 
   const supabase = getSupabaseClient();
 
+  // Keep the original file so the team can download it later (e.g. from a
+  // search result's "reference file" link) instead of only seeing the
+  // extracted fields.
+  const filename = "name" in file && file.name ? file.name : "import.xlsx";
+  const storagePath = `${crypto.randomUUID()}-${filename}`;
+  const { error: uploadError } = await supabase.storage
+    .from("import-files")
+    .upload(storagePath, buffer, {
+      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+  if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 500 });
+
+  const { data: batch, error: batchError } = await supabase
+    .from("import_batches")
+    .insert({
+      filename,
+      storage_path: storagePath,
+      uploaded_by: auth.session.username,
+      item_count: items.length,
+    })
+    .select()
+    .single();
+  if (batchError) return NextResponse.json({ error: batchError.message }, { status: 500 });
+
   // Look up existing rows by the (source_type, item_no) dedupe key so a
   // re-upload of the same file updates rows in place instead of duplicating.
   // Full rows (not just the key) so updates can log a real before-snapshot.
@@ -64,7 +88,7 @@ export async function POST(request: Request) {
   const beforeById = new Map<string, Record<string, unknown>>();
 
   items.forEach((item, i) => {
-    const row = { ...item, embedding: embeddings[i] };
+    const row = { ...item, embedding: embeddings[i], import_batch_id: batch.id };
     const key = item.item_no != null ? `${item.source_type}:${item.item_no}` : null;
     const existingRow = key ? existingByKey.get(key) : undefined;
     if (existingRow) {

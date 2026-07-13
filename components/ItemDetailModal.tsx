@@ -120,6 +120,20 @@ export default function ItemDetailModal({ item, onClose, canDelete, onDelete }: 
           <p className="rounded bg-zinc-50 p-2 text-xs whitespace-pre-wrap text-zinc-600">{item.remark}</p>
         )}
 
+        <p className="text-xs text-zinc-500">
+          <span className="font-medium">ไฟล์อ้างอิง:</span>{" "}
+          {item.source_filename ? (
+            <a
+              href={`/api/import-batches/${item.import_batch_id}/download`}
+              className="text-zinc-700 underline"
+            >
+              {item.source_filename}
+            </a>
+          ) : (
+            "ไม่มีไฟล์อ้างอิง (เพิ่มด้วยมือ/AI หรือ import ก่อนมีฟีเจอร์นี้)"
+          )}
+        </p>
+
         <div className="rounded-lg border border-zinc-200 p-3">
           <h3 className="text-xs font-semibold text-zinc-500">
             เทียบกับ {MODE_LABEL[otherMode]}
