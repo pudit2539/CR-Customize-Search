@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import ItemDetailModal from "@/components/ItemDetailModal";
 import { allCategories, categoryOf } from "@/lib/moduleCategories";
 import type { CrItemRow } from "@/lib/types";
 
@@ -17,6 +18,9 @@ export default function ItemsPage() {
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<CrItemRow>>({});
+  const [role, setRole] = useState<string | null>(null);
+  const [detailItem, setDetailItem] = useState<CrItemRow | null>(null);
+  const isAdmin = role === "admin";
 
   // Category groups Module codes (TM, BN, ...) into business-level buckets —
   // there aren't enough distinct categories to justify a server-side filter,
@@ -39,6 +43,9 @@ export default function ItemsPage() {
 
   useEffect(() => {
     load();
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((session) => setRole(session?.role ?? null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -58,9 +65,9 @@ export default function ItemsPage() {
     load();
   }
 
-  async function remove(id: string) {
-    if (!confirm("ลบรายการนี้?")) return;
+  async function removeFromModal(id: string) {
     await fetch(`/api/items/${id}`, { method: "DELETE" });
+    setDetailItem(null);
     load();
   }
 
@@ -102,6 +109,14 @@ export default function ItemsPage() {
         >
           ค้นหา
         </button>
+        {isAdmin && (
+          <a
+            href="/api/export"
+            className="ml-auto rounded-lg border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+          >
+            Export Excel
+          </a>
+        )}
       </div>
 
       {loading ? (
@@ -162,17 +177,19 @@ export default function ItemsPage() {
                     ) : (
                       <div className="flex gap-2">
                         <button
-                          onClick={() => startEdit(item)}
+                          onClick={() => setDetailItem(item)}
                           className="text-zinc-600 hover:underline"
                         >
-                          แก้ไข
+                          ดูรายละเอียด
                         </button>
-                        <button
-                          onClick={() => remove(item.id)}
-                          className="text-red-600 hover:underline"
-                        >
-                          ลบ
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => startEdit(item)}
+                            className="text-zinc-600 hover:underline"
+                          >
+                            แก้ไข
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>
@@ -181,6 +198,15 @@ export default function ItemsPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {detailItem && (
+        <ItemDetailModal
+          item={detailItem}
+          onClose={() => setDetailItem(null)}
+          canDelete={isAdmin}
+          onDelete={() => removeFromModal(detailItem.id)}
+        />
       )}
     </div>
   );

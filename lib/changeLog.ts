@@ -10,10 +10,12 @@ interface ChangeEntry {
 }
 
 // Best-effort audit log — a logging failure should never break the actual
-// mutation the user is waiting on.
+// mutation the user is waiting on. createdBy is the same for every entry in
+// one call since a single request only ever acts as one logged-in user.
 export async function logChanges(
   supabase: SupabaseClient,
-  entries: ChangeEntry[]
+  entries: ChangeEntry[],
+  createdBy?: string
 ): Promise<void> {
   if (entries.length === 0) return;
   try {
@@ -23,6 +25,7 @@ export async function logChanges(
         action: e.action,
         before: e.before ?? null,
         after: e.after ?? null,
+        created_by: createdBy ?? null,
       }))
     );
   } catch {

@@ -9,6 +9,7 @@ interface SearchLog {
   result_count: number;
   top_similarity: number | null;
   synthesis: string | null;
+  created_by: string | null;
   created_at: string;
   cr_items: { detail: string; module: string | null; source_type: string } | null;
 }
@@ -19,6 +20,7 @@ interface ChangeLog {
   action: string;
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
+  created_by: string | null;
   created_at: string;
 }
 
@@ -100,8 +102,8 @@ export default function HistoryPage() {
                 </span>
               </div>
               <p className="mt-1 text-xs text-zinc-500">
-                {log.mode ? MODE_LABEL[log.mode] ?? log.mode : "ทุกประเภท"} · เจอ {log.result_count}{" "}
-                รายการ
+                {log.created_by ?? "-"} · {log.mode ? MODE_LABEL[log.mode] ?? log.mode : "ทุกประเภท"} ·
+                เจอ {log.result_count} รายการ
                 {log.top_similarity != null && ` · ใกล้เคียงสุด ${(log.top_similarity * 100).toFixed(0)}%`}
               </p>
               {log.cr_items && (
@@ -120,6 +122,7 @@ export default function HistoryPage() {
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs text-zinc-500">
               <tr>
                 <th className="px-3 py-2">เวลา</th>
+                <th className="px-3 py-2">โดย</th>
                 <th className="px-3 py-2">การเปลี่ยนแปลง</th>
                 <th className="px-3 py-2">Module</th>
                 <th className="px-3 py-2">Detail</th>
@@ -133,6 +136,9 @@ export default function HistoryPage() {
                     <td className="px-3 py-2 whitespace-nowrap text-zinc-500">
                       {formatDateTime(log.created_at)}
                     </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-zinc-500">
+                      {log.created_by ?? "-"}
+                    </td>
                     <td className="px-3 py-2 whitespace-nowrap">
                       {ACTION_LABEL[log.action] ?? log.action}
                     </td>
@@ -145,7 +151,7 @@ export default function HistoryPage() {
               })}
               {changeLogs.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-3 py-6 text-center text-zinc-500">
+                  <td colSpan={5} className="px-3 py-6 text-center text-zinc-500">
                     ยังไม่มีประวัติการแก้ไขข้อมูล
                   </td>
                 </tr>

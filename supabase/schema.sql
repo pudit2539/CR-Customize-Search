@@ -97,3 +97,8 @@ create table if not exists cr_item_changes (
 );
 
 create index if not exists cr_item_changes_created_at_idx on cr_item_changes (created_at desc);
+
+-- Now that logins exist (admin/demo accounts), attribute each log entry to
+-- the username that made it.
+alter table search_logs add column if not exists created_by text;
+alter table cr_item_changes add column if not exists created_by text;

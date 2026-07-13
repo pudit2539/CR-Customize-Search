@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ItemDetailModal from "@/components/ItemDetailModal";
 import { formatMdBreakdown } from "@/lib/format";
 import type { CrItemMatch } from "@/lib/types";
 
@@ -19,6 +20,7 @@ export default function Home() {
   const [synthesis, setSynthesis] = useState<string | null>(null);
   const [matches, setMatches] = useState<CrItemMatch[]>([]);
   const [showAll, setShowAll] = useState(false);
+  const [detailItem, setDetailItem] = useState<CrItemMatch | null>(null);
 
   async function handleSearch() {
     if (!query.trim()) return;
@@ -133,6 +135,12 @@ export default function Home() {
                   {m.remark}
                 </p>
               )}
+              <button
+                onClick={() => setDetailItem(m)}
+                className="mt-2 text-xs text-zinc-600 hover:underline"
+              >
+                ดูรายละเอียด
+              </button>
             </div>
           ))}
 
@@ -146,6 +154,8 @@ export default function Home() {
           )}
         </div>
       )}
+
+      {detailItem && <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} />}
     </div>
   );
 }

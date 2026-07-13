@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { logChanges } from "@/lib/changeLog";
+import { requireAdmin, requireAuth } from "@/lib/dal";
 import { embedDocuments } from "@/lib/embed";
 import { embeddingText } from "@/lib/parseExcel";
 import { getSupabaseClient } from "@/lib/supabase";
 import type { CrItemRow } from "@/lib/types";
 
 export async function GET(request: Request) {
+  const auth = await requireAuth();
+  if (auth.response) return auth.response;
+
   const { searchParams } = new URL(request.url);
   const supabase = getSupabaseClient();
 
@@ -31,6 +35,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.response) return auth.response;
+
   const body = (await request.json()) as Partial<CrItemRow>;
   if (!body.detail || !body.source_type) {
     return NextResponse.json({ error: "detail and source_type are required" }, { status: 400 });
@@ -48,6 +55,6 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  await logChanges(supabase, [{ itemId: data.id, action: "insert", after: data }]);
+  await logChanges(supabase, [{ itemId: data.id, action: "insert", after: data }], auth.session.username);
   return NextResponse.json({ item: data });
 }

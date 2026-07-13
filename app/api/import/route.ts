@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { logChanges } from "@/lib/changeLog";
+import { requireAdmin } from "@/lib/dal";
 import { parseWorkbook, embeddingText } from "@/lib/parseExcel";
 import { embedDocuments } from "@/lib/embed";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -23,6 +24,9 @@ async function embedAll(texts: string[]): Promise<number[][]> {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.response) return auth.response;
+
   const form = await request.formData();
   const file = form.get("file");
   if (!(file instanceof Blob)) {
@@ -80,7 +84,8 @@ export async function POST(request: Request) {
         itemId: row.id,
         action: "import_insert",
         after: withoutEmbedding(row),
-      }))
+      })),
+      auth.session.username
     );
   }
   if (updateRows.length > 0) {
@@ -99,7 +104,8 @@ export async function POST(request: Request) {
           before: before ? withoutEmbedding(before) : null,
           after: withoutEmbedding(row),
         };
-      })
+      }),
+      auth.session.username
     );
   }
 

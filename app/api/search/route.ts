@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/dal";
 import { embedQuery } from "@/lib/embed";
 import { synthesizeMatches } from "@/lib/claude";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -7,6 +8,9 @@ import type { CrItemMatch, SourceType } from "@/lib/types";
 const MATCH_COUNT = 10;
 
 export async function POST(request: Request) {
+  const auth = await requireAuth();
+  if (auth.response) return auth.response;
+
   const { query, mode } = (await request.json()) as { query?: string; mode?: SourceType };
   if (!query || !query.trim()) {
     return NextResponse.json({ error: "query is required" }, { status: 400 });
@@ -40,6 +44,7 @@ export async function POST(request: Request) {
       top_match_id: matches[0]?.id ?? null,
       top_similarity: matches[0]?.similarity ?? null,
       synthesis,
+      created_by: auth.session.username,
     });
   } catch {
     // ignore
