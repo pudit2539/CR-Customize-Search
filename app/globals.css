@@ -12,11 +12,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* This app has no dark theme designed yet — force light mode regardless of
+   the browser/OS preference, otherwise the dark-mode background flips to
+   near-black while the rest of the UI (cards, muted grays) still assumes a
+   white background, which wrecks contrast. */
+:root {
+  color-scheme: light;
 }
 
 body {
