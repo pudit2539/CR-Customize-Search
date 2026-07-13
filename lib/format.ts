@@ -1,6 +1,6 @@
 import type { MdBreakdown } from "./types";
 
-const MD_ROLE_LABEL: Record<string, string> = {
+export const MD_ROLE_LABEL: Record<string, string> = {
   fun_junior: "Fun Junior",
   fun_consultant: "Fun Consultant",
   fun_senior: "Fun Senior",

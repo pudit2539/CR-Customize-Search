@@ -51,6 +51,11 @@ export default async function RootLayout({
                 <a href="/history" className="text-zinc-600 hover:text-zinc-950">
                   ประวัติ
                 </a>
+                {session.role === "admin" && (
+                  <a href="/settings" className="text-zinc-600 hover:text-zinc-950">
+                    ตั้งค่า
+                  </a>
+                )}
                 <span className="ml-auto flex items-center gap-4 text-zinc-500">
                   <span>
                     {session.username} ({session.role === "admin" ? "admin" : "user"})

@@ -10,9 +10,11 @@ const PUBLIC_PATHS = new Set(["/login", "/api/auth/login", "/api/auth/logout"]);
 // only one.
 function isAdminOnly(pathname: string, method: string): boolean {
   if (pathname === "/import") return true;
+  if (pathname === "/settings") return true;
   if (pathname.startsWith("/api/import")) return true;
   if (pathname.startsWith("/api/export")) return true;
   if (pathname.startsWith("/api/items") && method !== "GET") return true;
+  if (pathname.startsWith("/api/settings") && method !== "GET") return true;
   return false;
 }
 

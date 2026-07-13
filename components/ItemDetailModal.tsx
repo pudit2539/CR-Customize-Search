@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Modal from "./Modal";
-import { formatMdBreakdown } from "@/lib/format";
+import { formatMdBreakdown, MD_ROLE_LABEL } from "@/lib/format";
+import { computeCostBreakdown, DEFAULT_RATES, type MdRates } from "@/lib/mdRates";
 import type { CrItemRow } from "@/lib/types";
 
 interface Counterpart {
@@ -56,6 +57,7 @@ export default function ItemDetailModal({ item, onClose, canDelete, onDelete }: 
   const [counterpart, setCounterpart] = useState<Counterpart | null | undefined>(undefined);
   const [history, setHistory] = useState<ChangeLogEntry[]>([]);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [rates, setRates] = useState<MdRates>(DEFAULT_RATES);
 
   useEffect(() => {
     fetch(`/api/items/${item.id}/counterpart`)
@@ -64,7 +66,12 @@ export default function ItemDetailModal({ item, onClose, canDelete, onDelete }: 
     fetch(`/api/items/${item.id}/history`)
       .then((r) => r.json())
       .then((json) => setHistory(json.logs ?? []));
+    fetch("/api/settings/rates")
+      .then((r) => r.json())
+      .then((json) => json.rates && setRates(json.rates));
   }, [item.id]);
+
+  const { lines: costLines, total: computedCost } = computeCostBreakdown(item.md_breakdown, rates);
 
   const otherMode = item.source_type === "new_customer" ? "existing_customer" : "new_customer";
 
@@ -84,7 +91,7 @@ export default function ItemDetailModal({ item, onClose, canDelete, onDelete }: 
             {item.md_summary != null && <span className="text-zinc-400"> (รวม {item.md_summary} MD)</span>}
           </div>
           <div>
-            <span className="font-medium text-zinc-500">Cost:</span>{" "}
+            <span className="font-medium text-zinc-500">Cost ที่บันทึกไว้:</span>{" "}
             {item.cost != null ? item.cost.toLocaleString() : "-"}
           </div>
           <div>
@@ -94,6 +101,20 @@ export default function ItemDetailModal({ item, onClose, canDelete, onDelete }: 
             <span className="font-medium text-zinc-500">Industry:</span> {item.industry ?? "-"}
           </div>
         </div>
+
+        {costLines.length > 0 && (
+          <div className="rounded-lg bg-zinc-50 p-3 text-xs text-zinc-600">
+            <p className="font-medium text-zinc-500">คำนวณจากอัตรา MD ปัจจุบัน (ดู/ปรับที่หน้าตั้งค่า):</p>
+            <ul className="mt-1 space-y-0.5">
+              {costLines.map((l) => (
+                <li key={l.role}>
+                  {MD_ROLE_LABEL[l.role]}: {l.md} MD × {l.rate.toLocaleString()} = {l.amount.toLocaleString()}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 font-medium text-zinc-700">รวม: {computedCost.toLocaleString()} บาท</p>
+          </div>
+        )}
 
         {item.remark && (
           <p className="rounded bg-zinc-50 p-2 text-xs whitespace-pre-wrap text-zinc-600">{item.remark}</p>

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { MD_ROLE_LABEL } from "@/lib/format";
+import { computeCostBreakdown, DEFAULT_RATES, type MdRates } from "@/lib/mdRates";
 import type { MdBreakdown, SourceType } from "@/lib/types";
 
 export interface ItemFormValues {
@@ -32,15 +34,6 @@ export const emptyItemFormValues: ItemFormValues = {
   },
 };
 
-const MD_ROLE_LABEL: Record<keyof MdBreakdown, string> = {
-  fun_junior: "Fun Junior",
-  fun_consultant: "Fun Consultant",
-  fun_senior: "Fun Senior",
-  dev_consultant: "Dev Consultant",
-  dev_senior_mgr: "Dev Senior & Mgr",
-  manager: "Manager",
-};
-
 // md_summary matches the convention used throughout the app (see
 // lib/parseExcel.ts): sum of every role except Manager.
 function computeSummary(breakdown: Record<keyof MdBreakdown, string>): number {
@@ -65,6 +58,15 @@ export default function ItemForm({
   const [values, setValues] = useState<ItemFormValues>(initialValues);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rates, setRates] = useState<MdRates>(DEFAULT_RATES);
+
+  useEffect(() => {
+    fetch("/api/settings/rates")
+      .then((r) => r.json())
+      .then((json) => json.rates && setRates(json.rates));
+  }, []);
+
+  const { total: suggestedCost } = computeCostBreakdown(values.md_breakdown, rates);
 
   function setField<K extends keyof ItemFormValues>(key: K, value: ItemFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -122,6 +124,18 @@ export default function ItemForm({
             onChange={(e) => setField("cost", e.target.value)}
             className="rounded border border-zinc-300 px-2 py-1"
           />
+          {suggestedCost > 0 && (
+            <span className="text-xs text-zinc-400">
+              คำนวณจาก MD ปัจจุบัน: {suggestedCost.toLocaleString()}{" "}
+              <button
+                type="button"
+                onClick={() => setField("cost", String(suggestedCost))}
+                className="text-zinc-600 underline"
+              >
+                ใช้ค่านี้
+              </button>
+            </span>
+          )}
         </label>
       </div>
 

@@ -102,3 +102,25 @@ create index if not exists cr_item_changes_created_at_idx on cr_item_changes (cr
 -- the username that made it.
 alter table search_logs add column if not exists created_by text;
 alter table cr_item_changes add column if not exists created_by text;
+
+-- MD rate card, editable in /settings. Seeded with the rates that were
+-- previously only hardcoded in lib/parseExcel.ts / the Excel file's own
+-- header rows. Changing a rate here never rewrites cost already stored on
+-- existing cr_items rows — it only feeds new-item cost suggestions and the
+-- informational breakdown shown in the item detail modal.
+create table if not exists md_rates (
+  role text primary key check (
+    role in ('fun_junior', 'fun_consultant', 'fun_senior', 'dev_consultant', 'dev_senior_mgr', 'manager')
+  ),
+  rate numeric not null,
+  updated_at timestamptz not null default now()
+);
+
+insert into md_rates (role, rate) values
+  ('fun_junior', 2400),
+  ('fun_consultant', 4800),
+  ('fun_senior', 6000),
+  ('dev_consultant', 4800),
+  ('dev_senior_mgr', 7000),
+  ('manager', 8000)
+on conflict (role) do nothing;
