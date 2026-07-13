@@ -68,3 +68,32 @@ as $$
   order by embedding <=> query_embedding
   limit match_count;
 $$;
+
+-- Search history: one row per search, so the team can look back at what was
+-- searched and what the top result was.
+create table if not exists search_logs (
+  id uuid primary key default gen_random_uuid(),
+  query text not null,
+  mode text,
+  result_count int not null default 0,
+  top_match_id uuid references cr_items(id) on delete set null,
+  top_similarity float,
+  synthesis text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists search_logs_created_at_idx on search_logs (created_at desc);
+
+-- Item change log: audit trail for every insert/update/delete on cr_items,
+-- from both the manual /items UI and bulk /import. No login yet, so there's
+-- no "changed by" — just what changed and when.
+create table if not exists cr_item_changes (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid,
+  action text not null check (action in ('insert', 'update', 'delete', 'import_insert', 'import_update')),
+  before jsonb,
+  after jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists cr_item_changes_created_at_idx on cr_item_changes (created_at desc);

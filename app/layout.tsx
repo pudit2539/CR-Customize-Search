@@ -40,6 +40,9 @@ export default function RootLayout({
             <a href="/import" className="text-zinc-600 hover:text-zinc-950">
               นำเข้า Excel
             </a>
+            <a href="/history" className="text-zinc-600 hover:text-zinc-950">
+              ประวัติ
+            </a>
           </nav>
         </header>
         <main className="flex-1">{children}</main>

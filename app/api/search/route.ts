@@ -30,5 +30,20 @@ export async function POST(request: Request) {
   const matches = (data ?? []) as CrItemMatch[];
   const synthesis = await synthesizeMatches(query, matches);
 
+  // Best-effort logging — a failed insert here shouldn't break the search
+  // response the user is waiting on.
+  try {
+    await supabase.from("search_logs").insert({
+      query,
+      mode: mode ?? null,
+      result_count: matches.length,
+      top_match_id: matches[0]?.id ?? null,
+      top_similarity: matches[0]?.similarity ?? null,
+      synthesis,
+    });
+  } catch {
+    // ignore
+  }
+
   return NextResponse.json({ matches, synthesis });
 }

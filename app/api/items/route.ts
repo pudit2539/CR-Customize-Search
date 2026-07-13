@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logChanges } from "@/lib/changeLog";
 import { embedDocuments } from "@/lib/embed";
 import { embeddingText } from "@/lib/parseExcel";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -47,5 +48,6 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await logChanges(supabase, [{ itemId: data.id, action: "insert", after: data }]);
   return NextResponse.json({ item: data });
 }

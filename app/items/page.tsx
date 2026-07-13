@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { allCategories, categoryOf } from "@/lib/moduleCategories";
 import type { CrItemRow } from "@/lib/types";
 
 const MODE_LABEL: Record<string, string> = {
@@ -12,9 +13,18 @@ export default function ItemsPage() {
   const [items, setItems] = useState<CrItemRow[]>([]);
   const [keyword, setKeyword] = useState("");
   const [sourceType, setSourceType] = useState("");
+  const [category, setCategory] = useState("");
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<CrItemRow>>({});
+
+  // Category groups Module codes (TM, BN, ...) into business-level buckets —
+  // there aren't enough distinct categories to justify a server-side filter,
+  // so this narrows the already-fetched list client-side.
+  const visibleItems = useMemo(
+    () => (category ? items.filter((i) => categoryOf(i.module) === category) : items),
+    [items, category]
+  );
 
   async function load() {
     setLoading(true);
@@ -74,6 +84,18 @@ export default function ItemsPage() {
           <option value="new_customer">ลูกค้าใหม่</option>
           <option value="existing_customer">ลูกค้าเดิม</option>
         </select>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
+        >
+          <option value="">ทุกหมวด</option>
+          {allCategories().map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
         <button
           onClick={load}
           className="rounded-lg bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white"
@@ -91,6 +113,7 @@ export default function ItemsPage() {
               <tr>
                 <th className="px-3 py-2">No.</th>
                 <th className="px-3 py-2">ประเภท</th>
+                <th className="px-3 py-2">หมวด</th>
                 <th className="px-3 py-2">Module</th>
                 <th className="px-3 py-2">Detail</th>
                 <th className="px-3 py-2">MD</th>
@@ -99,11 +122,14 @@ export default function ItemsPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {visibleItems.map((item) => (
                 <tr key={item.id} className="border-b border-zinc-100 align-top">
                   <td className="px-3 py-2 text-zinc-500">{item.item_no ?? "-"}</td>
                   <td className="px-3 py-2 whitespace-nowrap text-zinc-500">
                     {MODE_LABEL[item.source_type]}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-zinc-500">
+                    {categoryOf(item.module)}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{item.module ?? "-"}</td>
                   <td className="max-w-md px-3 py-2">
