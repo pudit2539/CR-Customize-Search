@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { formatMdBreakdown } from "@/lib/format";
 import type { CrItemMatch } from "@/lib/types";
 
 const MODE_LABEL: Record<string, string> = {
   new_customer: "ลูกค้าใหม่ (Presale)",
   existing_customer: "ลูกค้าเดิม (PM)",
 };
+
+const RESULTS_PAGE_SIZE = 5;
 
 export default function Home() {
   const [mode, setMode] = useState<"new_customer" | "existing_customer">("new_customer");
@@ -15,16 +18,18 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [synthesis, setSynthesis] = useState<string | null>(null);
   const [matches, setMatches] = useState<CrItemMatch[]>([]);
+  const [showAll, setShowAll] = useState(false);
 
   async function handleSearch() {
     if (!query.trim()) return;
     setLoading(true);
     setError(null);
+    setShowAll(false);
     try {
       const res = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query, mode }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "search failed");
@@ -36,6 +41,8 @@ export default function Home() {
       setLoading(false);
     }
   }
+
+  const visibleMatches = showAll ? matches : matches.slice(0, RESULTS_PAGE_SIZE);
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
@@ -87,7 +94,7 @@ export default function Home() {
 
       {matches.length > 0 && (
         <div className="mt-6 space-y-4">
-          {matches.map((m) => (
+          {visibleMatches.map((m) => (
             <div key={m.id} className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -103,9 +110,12 @@ export default function Home() {
                 </span>
               </div>
               <p className="mt-2 text-sm whitespace-pre-wrap text-zinc-800">{m.detail}</p>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-600 sm:grid-cols-4">
+              <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-zinc-600 sm:grid-cols-2">
                 <div>
-                  <span className="font-medium text-zinc-500">MD รวม:</span> {m.md_summary ?? "-"}
+                  <span className="font-medium text-zinc-500">MD:</span> {formatMdBreakdown(m.md_breakdown)}
+                  {m.md_summary != null && (
+                    <span className="text-zinc-400"> (รวม {m.md_summary} MD)</span>
+                  )}
                 </div>
                 <div>
                   <span className="font-medium text-zinc-500">Cost:</span>{" "}
@@ -125,6 +135,15 @@ export default function Home() {
               )}
             </div>
           ))}
+
+          {!showAll && matches.length > RESULTS_PAGE_SIZE && (
+            <button
+              onClick={() => setShowAll(true)}
+              className="w-full rounded-lg border border-dashed border-zinc-300 bg-white py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50"
+            >
+              แสดงเพิ่ม ({matches.length - RESULTS_PAGE_SIZE} รายการ)
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { embedQuery } from "@/lib/embed";
 import { synthesizeMatches } from "@/lib/claude";
 import { getSupabaseClient } from "@/lib/supabase";
-import type { CrItemMatch } from "@/lib/types";
+import type { CrItemMatch, SourceType } from "@/lib/types";
 
 const MATCH_COUNT = 10;
 
 export async function POST(request: Request) {
-  const { query } = (await request.json()) as { query?: string };
+  const { query, mode } = (await request.json()) as { query?: string; mode?: SourceType };
   if (!query || !query.trim()) {
     return NextResponse.json({ error: "query is required" }, { status: 400 });
   }
@@ -15,9 +15,13 @@ export async function POST(request: Request) {
   const supabase = getSupabaseClient();
   const queryEmbedding = await embedQuery(query);
 
+  // mode narrows results to the sheet matching what the user is estimating
+  // for (new customer vs. existing customer) — without this, near-identical
+  // rows from both sheets show up side by side and look like duplicates.
   const { data, error } = await supabase.rpc("match_cr_items", {
     query_embedding: queryEmbedding,
     match_count: MATCH_COUNT,
+    filter_source_type: mode ?? null,
   });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

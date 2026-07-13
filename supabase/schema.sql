@@ -31,9 +31,12 @@ create index if not exists cr_items_embedding_idx
   on cr_items using hnsw (embedding vector_cosine_ops);
 
 -- Similarity search RPC: cosine distance via pgvector's `<=>` operator.
+-- filter_source_type narrows to one sheet (new_customer / existing_customer)
+-- when the caller picked a mode; pass null to search across both.
 create or replace function match_cr_items(
   query_embedding vector(512),
-  match_count int default 10
+  match_count int default 10,
+  filter_source_type text default null
 )
 returns table (
   id uuid,
@@ -61,6 +64,7 @@ as $$
     1 - (embedding <=> query_embedding) as similarity
   from cr_items
   where embedding is not null
+    and (filter_source_type is null or source_type = filter_source_type)
   order by embedding <=> query_embedding
   limit match_count;
 $$;
