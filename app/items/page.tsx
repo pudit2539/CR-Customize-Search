@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ItemDetailModal from "@/components/ItemDetailModal";
+import ItemFormModal from "@/components/ItemFormModal";
 import { allCategories, categoryOf } from "@/lib/moduleCategories";
 import type { CrItemRow } from "@/lib/types";
 
@@ -20,6 +21,7 @@ export default function ItemsPage() {
   const [draft, setDraft] = useState<Partial<CrItemRow>>({});
   const [role, setRole] = useState<string | null>(null);
   const [detailItem, setDetailItem] = useState<CrItemRow | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const isAdmin = role === "admin";
 
   // Category groups Module codes (TM, BN, ...) into business-level buckets —
@@ -110,12 +112,20 @@ export default function ItemsPage() {
           ค้นหา
         </button>
         {isAdmin && (
-          <a
-            href="/api/export"
-            className="ml-auto rounded-lg border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-          >
-            Export Excel
-          </a>
+          <div className="ml-auto flex gap-2">
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="rounded-lg border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              + เพิ่มรายการใหม่
+            </button>
+            <a
+              href="/api/export"
+              className="rounded-lg border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              Export Excel
+            </a>
+          </div>
         )}
       </div>
 
@@ -206,6 +216,16 @@ export default function ItemsPage() {
           onClose={() => setDetailItem(null)}
           canDelete={isAdmin}
           onDelete={() => removeFromModal(detailItem.id)}
+        />
+      )}
+
+      {showAddForm && (
+        <ItemFormModal
+          onClose={() => setShowAddForm(false)}
+          onSaved={() => {
+            setShowAddForm(false);
+            load();
+          }}
         />
       )}
     </div>

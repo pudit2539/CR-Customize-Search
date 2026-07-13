@@ -45,7 +45,7 @@ export default async function RootLayout({
                 </a>
                 {session.role === "admin" && (
                   <a href="/import" className="text-zinc-600 hover:text-zinc-950">
-                    นำเข้า Excel
+                    นำเข้าข้อมูล
                   </a>
                 )}
                 <a href="/history" className="text-zinc-600 hover:text-zinc-950">
