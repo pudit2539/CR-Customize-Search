@@ -114,7 +114,12 @@ export async function synthesizeMatches(query: string, matches: CrItemMatch[]): 
 
   const message = await client.messages.create({
     model: MODEL,
-    max_tokens: 400,
+    // 400, then 800, both still got cut off mid-sentence once Claude
+    // compares several matches' per-role MD breakdowns (as asked below) —
+    // Thai text runs more tokens per character than English on top of that.
+    // 1500 gives real headroom; the truncation note below is the backstop
+    // if a response is unusually long anyway.
+    max_tokens: 1500,
     // This is a short, non-reasoning summary task — disable extended
     // thinking so its token budget doesn't eat into max_tokens and leave
     // nothing for the actual answer.
@@ -128,5 +133,9 @@ export async function synthesizeMatches(query: string, matches: CrItemMatch[]): 
   });
 
   const textBlock = message.content.find((b) => b.type === "text");
-  return textBlock?.type === "text" ? textBlock.text : "";
+  const text = textBlock?.type === "text" ? textBlock.text : "";
+  // Surface truncation instead of silently showing a sentence that trails
+  // off mid-word — better an honest note than text that reads as complete
+  // but isn't.
+  return message.stop_reason === "max_tokens" ? `${text}\n\n(สรุปถูกตัดเพราะยาวเกินไป)` : text;
 }
