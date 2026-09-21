@@ -18,6 +18,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   Sparkles,
+  X,
 } from "lucide-react";
 
 interface MenuItem {
@@ -47,7 +48,15 @@ interface Session {
   role: string;
 }
 
-export default function Sidebar({ session }: { session: Session | null }) {
+export default function Sidebar({
+  session,
+  mobileOpen = false,
+  onMobileClose,
+}: {
+  session: Session | null;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
@@ -63,6 +72,7 @@ export default function Sidebar({ session }: { session: Session | null }) {
     if (!q.trim()) return;
     router.push(`/?q=${encodeURIComponent(q.trim())}`);
     setQuickQuery("");
+    onMobileClose?.();
   }
 
   async function handleLogout() {
@@ -79,6 +89,7 @@ export default function Sidebar({ session }: { session: Session | null }) {
       <Link
         key={item.href}
         href={item.href}
+        onClick={onMobileClose}
         title={collapsed ? item.label : undefined}
         className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-all ${
           active
@@ -93,24 +104,42 @@ export default function Sidebar({ session }: { session: Session | null }) {
   }
 
   return (
-    <aside
-      className={`flex h-full flex-col rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/70 transition-all ${
-        collapsed ? "w-[76px]" : "w-64"
-      }`}
-    >
-      <div className={collapsed ? "flex flex-col items-center gap-2" : "flex items-center justify-between gap-2"}>
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-200">
-          <Sparkles size={17} />
-        </span>
-        {!collapsed && <span className="flex-1 text-base font-semibold whitespace-nowrap">CR Search</span>}
-        <button
-          onClick={() => setCollapsed((c) => !c)}
-          className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
-          title={collapsed ? "ขยายเมนู" : "ย่อเมนู"}
-        >
-          {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
-        </button>
-      </div>
+    <>
+      {/* Backdrop for the mobile drawer — clicking it closes the menu. */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/30 md:hidden"
+          onClick={onMobileClose}
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        className={`flex flex-col rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/70 transition-all
+          fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] rounded-l-none md:rounded-l-2xl
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+          md:static md:z-auto md:h-full md:max-w-none md:translate-x-0
+          ${collapsed ? "md:w-[76px]" : "md:w-64"}`}
+      >
+        <div className={collapsed ? "flex flex-col items-center gap-2 md:flex" : "flex items-center justify-between gap-2"}>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-200">
+            <Sparkles size={17} />
+          </span>
+          {!collapsed && <span className="flex-1 text-base font-semibold whitespace-nowrap">CR Search</span>}
+          <button
+            onClick={onMobileClose}
+            className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 md:hidden"
+            aria-label="ปิดเมนู"
+          >
+            <X size={18} />
+          </button>
+          <button
+            onClick={() => setCollapsed((c) => !c)}
+            className="hidden rounded-md p-1.5 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 md:block"
+            title={collapsed ? "ขยายเมนู" : "ย่อเมนู"}
+          >
+            {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
+          </button>
+        </div>
 
       {!collapsed && (
         <>
@@ -177,6 +206,7 @@ export default function Sidebar({ session }: { session: Session | null }) {
           </button>
         </div>
       )}
-    </aside>
+      </aside>
+    </>
   );
 }

@@ -13,12 +13,17 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const supabase = getSupabaseClient();
 
+  // Capped rather than paginated — the UI has no pager yet, so a hard limit
+  // just prevents an unbounded full-table fetch if cr_items keeps growing.
+  const ITEMS_CAP = 2000;
+
   let query = supabase
     .from("cr_items")
     .select(
       "id, source_type, item_no, module, detail, md_breakdown, md_summary, cost, project, industry, check_note, priority, remark, timeline_followup, presale_note, import_batch_id, created_at, updated_at, import_batches(filename)"
     )
-    .order("item_no", { ascending: true });
+    .order("item_no", { ascending: true })
+    .limit(ITEMS_CAP);
 
   const sourceType = searchParams.get("source_type");
   if (sourceType) query = query.eq("source_type", sourceType);

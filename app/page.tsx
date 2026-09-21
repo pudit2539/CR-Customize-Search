@@ -137,8 +137,8 @@ export default function Home() {
   const visibleMatches = showAll ? matches : matches.slice(0, RESULTS_PAGE_SIZE);
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-8">
-      <h1 className="text-2xl font-semibold text-zinc-900">ค้นหา CR/Customize ที่เคยทำแล้ว</h1>
+    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-8">
+      <h1 className="text-xl font-semibold text-zinc-900 sm:text-2xl">ค้นหา CR/Customize ที่เคยทำแล้ว</h1>
       <p className="mt-1 text-zinc-600">
         พิมพ์ requirement ที่ได้รับมา ระบบจะค้นหาเคสเก่าที่ใกล้เคียงที่สุดให้
         {totalItems != null && (

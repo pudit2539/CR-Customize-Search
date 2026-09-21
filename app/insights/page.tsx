@@ -39,18 +39,21 @@ export default function InsightsPage() {
 
   useEffect(() => {
     fetch("/api/insights")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`โหลด insights ไม่สำเร็จ (${r.status})`);
+        return r.json();
+      })
       .then((json) => {
         if (json.error) setError(json.error);
         else setData(json);
       })
-      .catch((e) => setError(String(e)));
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
   if (error) {
     return (
-      <div className="px-8 py-8">
-        <h1 className="text-2xl font-semibold text-zinc-900">Insights</h1>
+      <div className="px-4 py-6 sm:px-8 sm:py-8">
+        <h1 className="text-xl font-semibold text-zinc-900 sm:text-2xl">Insights</h1>
         <p className="mt-4 text-sm text-red-600">เกิดข้อผิดพลาด: {error}</p>
       </div>
     );
@@ -58,7 +61,7 @@ export default function InsightsPage() {
 
   if (!data) {
     return (
-      <div className="animate-pulse px-8 py-8">
+      <div className="animate-pulse px-4 py-6 sm:px-8 sm:py-8">
         <div className="h-7 w-40 rounded bg-zinc-200" />
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
@@ -103,8 +106,8 @@ export default function InsightsPage() {
   ];
 
   return (
-    <div className="px-8 py-8">
-      <h1 className="flex items-center gap-2 text-2xl font-semibold text-zinc-900">
+    <div className="px-4 py-6 sm:px-8 sm:py-8">
+      <h1 className="flex items-center gap-2 text-xl font-semibold text-zinc-900 sm:text-2xl">
         <Lightbulb size={22} />
         Insights
       </h1>

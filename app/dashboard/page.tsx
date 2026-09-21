@@ -53,6 +53,7 @@ export default function DashboardPage() {
   const [category, setCategory] = useState("");
   const [project, setProject] = useState("");
   const [clientSearch, setClientSearch] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef = useRef<Chart | null>(null);
   const isAdmin = role === "admin";
@@ -67,10 +68,15 @@ export default function DashboardPage() {
   // filter immediately, instead of reading the not-yet-updated `project`
   // state closed over by this render's `load`.
   function load(overrides?: { project?: string }) {
+    setError(null);
     const params = { ...filterParams, ...(overrides?.project && { project: overrides.project }) };
     fetch(`/api/dashboard?${new URLSearchParams(params).toString()}`)
-      .then((r) => r.json())
-      .then(setData);
+      .then((r) => {
+        if (!r.ok) throw new Error(`โหลดแดชบอร์ดไม่สำเร็จ (${r.status})`);
+        return r.json();
+      })
+      .then(setData)
+      .catch((err) => setError(err instanceof Error ? err.message : "โหลดแดชบอร์ดไม่สำเร็จ"));
   }
 
   useEffect(() => {
@@ -134,9 +140,23 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, router]);
 
+  if (error && !data) {
+    return (
+      <div className="px-4 py-6 sm:px-8 sm:py-8">
+        <h1 className="text-xl font-semibold text-zinc-900 sm:text-2xl">แดชบอร์ด</h1>
+        <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
+          {error}{" "}
+          <button onClick={() => load()} className="ml-2 font-medium underline">
+            ลองใหม่
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!data) {
     return (
-      <div className="animate-pulse px-8 py-8">
+      <div className="animate-pulse px-4 py-6 sm:px-8 sm:py-8">
         <div className="h-7 w-40 rounded bg-zinc-200" />
         <div className="mt-6 h-16 rounded-2xl border border-zinc-100 bg-white shadow-sm shadow-zinc-200/60" />
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -193,58 +213,53 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="px-8 py-8">
-      <h1 className="text-2xl font-semibold text-zinc-900">แดชบอร์ด</h1>
+    <div className="px-4 py-6 sm:px-8 sm:py-8">
+      <h1 className="text-xl font-semibold text-zinc-900 sm:text-2xl">แดชบอร์ด</h1>
 
-      <div className="mt-6 rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={sourceType}
-            onChange={(e) => setSourceType(e.target.value)}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600"
-          >
-            <option value="">ทุกประเภท</option>
-            <option value="new_customer">{SOURCE_TYPE_LABEL.new_customer}</option>
-            <option value="existing_customer">{SOURCE_TYPE_LABEL.existing_customer}</option>
-          </select>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600"
-          >
-            <option value="">ทุกหมวด</option>
-            {allCategories().map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+      {error && (
+        <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+      )}
+
+      <div className="mt-6 surface-card p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <select value={sourceType} onChange={(e) => setSourceType(e.target.value)} className="control">
+              <option value="">ทุกประเภท</option>
+              <option value="new_customer">{SOURCE_TYPE_LABEL.new_customer}</option>
+              <option value="existing_customer">{SOURCE_TYPE_LABEL.existing_customer}</option>
+            </select>
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="control">
+              <option value="">ทุกหมวด</option>
+              {allCategories().map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
           <Autocomplete
             value={project}
             onChange={setProject}
             onSubmit={(v) => load({ project: v })}
             suggestionType="project"
             placeholder="ชื่อโปรเจกต์/ลูกค้า..."
-            className="w-48 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
+            className="control w-full sm:w-48"
           />
-          <button
-            onClick={() => load()}
-            className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-          >
+          <button onClick={() => load()} className="btn btn-primary w-full sm:w-auto">
             <SlidersHorizontal size={14} />
             กรองข้อมูล
           </button>
-          <div className="ml-auto flex gap-2">
+          <div className="flex flex-col gap-2 sm:ml-auto sm:flex-row">
             <a
               href={`/items?${new URLSearchParams(filterParams).toString()}`}
-              className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+              className="btn btn-secondary"
             >
               ดูรายการที่กรอง
             </a>
             {isAdmin && (
               <a
                 href={`/api/export?${new URLSearchParams(filterParams).toString()}`}
-                className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                className="btn btn-secondary"
               >
                 <Download size={15} />
                 Export
@@ -286,27 +301,27 @@ export default function DashboardPage() {
         <p className="mt-2 text-xs text-zinc-400">คลิกแถบเพื่อดูรายการในหมวดนั้น</p>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm shadow-zinc-200/60">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-4 surface-card p-4 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-semibold text-zinc-900">รายละเอียดตามลูกค้า/โปรเจกต์</h2>
             <p className="mt-0.5 text-xs text-zinc-400">
               ทั้งหมด {data.byClient.length} เจ้า — คลิกชื่อเพื่อดูรายการของลูกค้านั้น
             </p>
           </div>
-          <div className="relative w-56">
+          <div className="relative w-full sm:w-56">
             <Search size={14} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400" />
             <input
               value={clientSearch}
               onChange={(e) => setClientSearch(e.target.value)}
               placeholder="ค้นหาชื่อลูกค้า..."
-              className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
+              className="control w-full pl-8"
             />
           </div>
         </div>
 
-        <div className="mt-4 max-h-96 overflow-y-auto">
-          <table className="w-full text-left text-sm">
+        <div className="mt-4 sm:max-h-96 sm:overflow-y-auto">
+          <table className="table-responsive w-full text-left text-sm">
             <thead className="sticky top-0 bg-white text-xs text-zinc-400">
               <tr>
                 <th className="px-3 py-2 font-medium">ลูกค้า/โปรเจกต์</th>
@@ -320,7 +335,7 @@ export default function DashboardPage() {
             <tbody>
               {filteredClients.map((c) => (
                 <tr key={c.name} className="border-t border-zinc-100 hover:bg-zinc-50/60">
-                  <td className="px-3 py-2">
+                  <td data-label="ลูกค้า/โปรเจกต์" className="px-3 py-2">
                     <button
                       onClick={() => router.push(`/items?project=${encodeURIComponent(c.name)}`)}
                       className="text-left text-zinc-800 hover:text-zinc-900 hover:underline"
@@ -328,11 +343,11 @@ export default function DashboardPage() {
                       {c.name}
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-right font-medium text-zinc-900">{c.total}</td>
-                  <td className="px-3 py-2 text-right text-blue-700">{c.new_customer || "-"}</td>
-                  <td className="px-3 py-2 text-right text-emerald-700">{c.existing_customer || "-"}</td>
-                  <td className="px-3 py-2 text-right text-zinc-600">{c.totalMd || "-"}</td>
-                  <td className="px-3 py-2 text-right text-zinc-600">
+                  <td data-label="รวมรายการ" className="px-3 py-2 text-right font-medium text-zinc-900">{c.total}</td>
+                  <td data-label={SOURCE_TYPE_LABEL.new_customer} className="px-3 py-2 text-right text-blue-700">{c.new_customer || "-"}</td>
+                  <td data-label={SOURCE_TYPE_LABEL.existing_customer} className="px-3 py-2 text-right text-emerald-700">{c.existing_customer || "-"}</td>
+                  <td data-label="รวม MD" className="px-3 py-2 text-right text-zinc-600">{c.totalMd || "-"}</td>
+                  <td data-label="รวม Cost" className="px-3 py-2 text-right text-zinc-600">
                     {c.totalCost ? c.totalCost.toLocaleString() : "-"}
                   </td>
                 </tr>

@@ -26,12 +26,18 @@ export default function StdCandidatesPage() {
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [detailItem, setDetailItem] = useState<CrItemRow | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   function load() {
     setLoading(true);
+    setError(null);
     fetch("/api/std-candidates")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`โหลดรายการไม่สำเร็จ (${r.status})`);
+        return r.json();
+      })
       .then((json) => setCandidates(json.candidates ?? []))
+      .catch((err) => setError(err instanceof Error ? err.message : "โหลดรายการไม่สำเร็จ"))
       .finally(() => setLoading(false));
   }
 
@@ -63,8 +69,8 @@ export default function StdCandidatesPage() {
   }
 
   return (
-    <div className="px-8 py-8">
-      <h1 className="flex items-center gap-2 text-2xl font-semibold text-zinc-900">
+    <div className="px-4 py-6 sm:px-8 sm:py-8">
+      <h1 className="flex items-center gap-2 text-xl font-semibold text-zinc-900 sm:text-2xl">
         <Star size={22} className="fill-amber-500 text-amber-500" />
         รายการเสนอ STD Candidate
       </h1>
@@ -78,16 +84,17 @@ export default function StdCandidatesPage() {
         เปลี่ยนแล้วกระทบทุกคน — ควรเป็นการปรับที่จำเป็นจริงๆ ไม่ใช่ custom เฉพาะเจ้าเดียว
       </p>
 
-      <div className="mt-6 flex items-center justify-between">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-sm text-zinc-500">ทั้งหมด {candidates.length} รายการ</span>
-        <a
-          href="/api/std-candidates/export"
-          className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
+        <a href="/api/std-candidates/export" className="btn btn-primary">
           <Download size={15} />
           Export Excel เพื่อส่งพี่ยอด/พี่แชมป์
         </a>
       </div>
+
+      {error && (
+        <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+      )}
 
       {loading ? (
         <div className="mt-4 animate-pulse space-y-2">

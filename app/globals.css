@@ -3,6 +3,12 @@
 :root {
   --background: #f4f4f5;
   --foreground: #171717;
+
+  /* Design tokens — shared across every page so cards/buttons/inputs stay
+     visually consistent instead of each page picking its own radius/shadow. */
+  --radius-card: 1rem;
+  --radius-control: 0.65rem;
+  --shadow-card: 0 1px 2px 0 rgb(24 24 27 / 0.06), 0 1px 8px -2px rgb(24 24 27 / 0.06);
 }
 
 @theme inline {
@@ -24,4 +30,139 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Shared primitives — use these instead of hand-picking rounded-xl/2xl,
+   shadow-sm/shadow-zinc-*, etc. per page. Keeps every surface consistent
+   and gives us one place to retune the look later. */
+@layer components {
+  .surface-card {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-zinc-100);
+    background: #fff;
+    box-shadow: var(--shadow-card);
+  }
+
+  .control {
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-zinc-200);
+    background: #fff;
+    padding-inline: 0.75rem;
+    padding-block: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-zinc-900);
+  }
+  .control:focus {
+    outline: none;
+    border-color: var(--color-indigo-400);
+    box-shadow: 0 0 0 3px rgb(99 102 241 / 0.15);
+  }
+  .control::placeholder {
+    color: var(--color-zinc-400);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-control);
+    padding-inline: 0.9rem;
+    padding-block: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--color-indigo-600);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-indigo-700);
+  }
+
+  .btn-secondary {
+    background: #fff;
+    border: 1px solid var(--color-zinc-200);
+    color: var(--color-zinc-700);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--color-zinc-50);
+  }
+
+  .btn-danger {
+    background: #fff;
+    border: 1px solid var(--color-red-200);
+    color: var(--color-red-600);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: var(--color-red-50);
+  }
+
+  /* Responsive table: renders as a normal table at sm+ and collapses into
+     stacked label/value cards below sm, driven purely by CSS (no JS/markup
+     branching needed) via the `data-label` attribute on each <td>. */
+  .table-responsive thead {
+    display: none;
+  }
+  .table-responsive tr {
+    display: block;
+    margin-bottom: 0.75rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-zinc-100);
+    overflow: hidden;
+  }
+  .table-responsive td {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    max-width: 100%;
+    padding: 0.6rem 0.85rem;
+    text-align: left;
+    border-bottom: 1px solid var(--color-zinc-50);
+    overflow-x: auto;
+  }
+  .table-responsive td:last-child {
+    border-bottom: none;
+  }
+  .table-responsive td::before {
+    content: attr(data-label);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-zinc-400);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .table-responsive td:not([data-label])::before {
+    content: none;
+  }
+
+  @media (min-width: 640px) {
+    .table-responsive thead {
+      display: table-header-group;
+    }
+    .table-responsive tr {
+      display: table-row;
+      margin-bottom: 0;
+      border-radius: 0;
+      border: none;
+      border-bottom: 1px solid var(--color-zinc-100);
+    }
+    .table-responsive td {
+      display: table-cell;
+      text-align: left;
+      padding: 0.6rem 0.85rem;
+      border-bottom: none;
+    }
+    .table-responsive td::before {
+      content: none;
+    }
+  }
 }

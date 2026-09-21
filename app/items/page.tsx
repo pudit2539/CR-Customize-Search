@@ -47,6 +47,7 @@ export default function ItemsPage() {
   const [role, setRole] = useState<string | null>(null);
   const [detailItem, setDetailItem] = useState<CrItemRow | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const isAdmin = role === "admin";
 
   // Category groups Module codes (TM, BN, ...) into business-level buckets —
@@ -62,16 +63,24 @@ export default function ItemsPage() {
   // yet since state updates land on the next render.
   async function load(overrides?: { keyword?: string; project?: string }) {
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams();
     const effectiveKeyword = overrides?.keyword ?? keyword;
     const effectiveProject = overrides?.project ?? project;
     if (effectiveKeyword) params.set("keyword", effectiveKeyword);
     if (sourceType) params.set("source_type", sourceType);
     if (effectiveProject) params.set("project", effectiveProject);
-    const res = await fetch(`/api/items?${params.toString()}`);
-    const json = await res.json();
-    setItems(json.items ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/items?${params.toString()}`);
+      if (!res.ok) throw new Error(`โหลดรายการไม่สำเร็จ (${res.status})`);
+      const json = await res.json();
+      setItems(json.items ?? []);
+    } catch (err) {
+      setItems([]);
+      setError(err instanceof Error ? err.message : "โหลดรายการไม่สำเร็จ");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -105,9 +114,9 @@ export default function ItemsPage() {
   }
 
   return (
-    <div className="px-8 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-zinc-900">รายการ CR/Customize ทั้งหมด</h1>
+    <div className="px-4 py-6 sm:px-8 sm:py-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-semibold text-zinc-900 sm:text-2xl">รายการ CR/Customize ทั้งหมด</h1>
         {isAdmin && (
           <div className="flex gap-2">
             <a
@@ -116,15 +125,12 @@ export default function ItemsPage() {
                 ...(category && { category }),
                 ...(project && { project }),
               }).toString()}`}
-              className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+              className="btn btn-secondary flex-1 sm:flex-none"
             >
               <Download size={15} />
               Export
             </a>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-            >
+            <button onClick={() => setShowAddForm(true)} className="btn btn-primary flex-1 sm:flex-none">
               <Plus size={15} />
               เพิ่มรายการใหม่
             </button>
@@ -132,12 +138,12 @@ export default function ItemsPage() {
         )}
       </div>
 
-      <div className="mt-6 rounded-2xl border border-zinc-100 bg-white shadow-sm shadow-zinc-200/60">
-        <div className="flex flex-wrap items-center gap-2 border-b border-zinc-100 p-4">
+      <div className="mt-6 surface-card">
+        <div className="flex flex-col gap-2 border-b border-zinc-100 p-4 sm:flex-row sm:flex-wrap sm:items-center">
           <span className="mr-1 text-sm font-semibold text-zinc-900">
             รายการ <span className="font-normal text-zinc-400">ทั้งหมด {visibleItems.length}</span>
           </span>
-          <div className="relative w-56">
+          <div className="relative w-full sm:w-56">
             <Search size={15} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 z-10 text-zinc-400" />
             <Autocomplete
               value={keyword}
@@ -145,46 +151,49 @@ export default function ItemsPage() {
               onSubmit={(v) => load({ keyword: v })}
               suggestionType="query"
               placeholder="ค้นหาคำในรายละเอียด..."
-              className="w-56 rounded-lg border border-zinc-200 bg-white py-2 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
+              className="control w-full pl-8"
             />
           </div>
-          <select
-            value={sourceType}
-            onChange={(e) => setSourceType(e.target.value)}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600"
-          >
-            <option value="">ทุกประเภท</option>
-            <option value="new_customer">{SOURCE_TYPE_LABEL.new_customer}</option>
-            <option value="existing_customer">{SOURCE_TYPE_LABEL.existing_customer}</option>
-          </select>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600"
-          >
-            <option value="">ทุกหมวด</option>
-            {allCategories().map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <select
+              value={sourceType}
+              onChange={(e) => setSourceType(e.target.value)}
+              className="control"
+            >
+              <option value="">ทุกประเภท</option>
+              <option value="new_customer">{SOURCE_TYPE_LABEL.new_customer}</option>
+              <option value="existing_customer">{SOURCE_TYPE_LABEL.existing_customer}</option>
+            </select>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="control"
+            >
+              <option value="">ทุกหมวด</option>
+              {allCategories().map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
           <Autocomplete
             value={project}
             onChange={setProject}
             onSubmit={(v) => load({ project: v })}
             suggestionType="project"
             placeholder="ชื่อโปรเจกต์/ลูกค้า..."
-            className="w-48 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
+            className="control w-full sm:w-48"
           />
-          <button
-            onClick={() => load()}
-            className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-          >
+          <button onClick={() => load()} className="btn btn-primary w-full sm:w-auto">
             <SlidersHorizontal size={14} />
             ค้นหา
           </button>
         </div>
+
+        {error && (
+          <div className="border-b border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        )}
 
         {loading ? (
           <div className="animate-pulse p-4">
@@ -199,9 +208,11 @@ export default function ItemsPage() {
               </div>
             ))}
           </div>
+        ) : visibleItems.length === 0 ? (
+          <p className="p-6 text-center text-sm text-zinc-400">ไม่พบรายการ</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+          <div className="p-3 sm:overflow-x-auto sm:p-0">
+            <table className="table-responsive w-full text-left text-sm">
               <thead className="text-xs text-zinc-400">
                 <tr>
                   <th className="px-4 py-3 font-medium">รายการ</th>
@@ -215,15 +226,15 @@ export default function ItemsPage() {
               </thead>
               <tbody>
                 {visibleItems.map((item) => (
-                  <tr key={item.id} className="border-t border-zinc-100 align-top hover:bg-zinc-50/60">
-                    <td className="max-w-md px-4 py-3">
+                  <tr key={item.id} className="border-t border-zinc-100 align-top hover:bg-zinc-50/60 sm:border-t">
+                    <td data-label="รายการ" className="max-w-md px-4 py-3">
                       <div className="flex items-start gap-3">
                         <span
                           className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ${moduleColor(item.module)}`}
                         >
                           {(item.module ?? "-").slice(0, 2)}
                         </span>
-                        <div className="min-w-0">
+                        <div className="min-w-0 text-left">
                           {editingId === item.id ? (
                             <textarea
                               value={draft.detail ?? ""}
@@ -238,19 +249,19 @@ export default function ItemsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td data-label="ประเภท" className="px-4 py-3 whitespace-nowrap">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${MODE_BADGE[item.source_type]}`}>
                         {MODE_LABEL[item.source_type]}
                       </span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-zinc-500">{categoryOf(item.module)}</td>
-                    <td className="px-3 py-3">
+                    <td data-label="หมวด" className="px-4 py-3 whitespace-nowrap text-zinc-500">{categoryOf(item.module)}</td>
+                    <td data-label="MD" className="px-3 py-3">
                       <MdMatrix breakdown={item.md_breakdown} />
                     </td>
-                    <td className="px-3 py-3 text-right whitespace-nowrap font-medium text-zinc-900">
+                    <td data-label="รวม MD" className="px-3 py-3 text-right whitespace-nowrap font-medium text-zinc-900">
                       {item.md_summary ?? "-"}
                     </td>
-                    <td className="max-w-xs px-4 py-3 truncate text-zinc-500">{item.project ?? "-"}</td>
+                    <td data-label="Project" className="max-w-xs px-4 py-3 truncate text-zinc-500">{item.project ?? "-"}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {editingId === item.id ? (
                         <div className="flex gap-2">

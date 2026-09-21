@@ -89,8 +89,12 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetch("/api/settings/rates")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`โหลดข้อมูลไม่สำเร็จ (${r.status})`);
+        return r.json();
+      })
       .then(applyResponse)
+      .catch((err) => setError(err instanceof Error ? err.message : "โหลดข้อมูลไม่สำเร็จ"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -165,8 +169,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="px-8 py-8">
-      <h1 className="text-2xl font-semibold text-zinc-900">ตั้งค่าอัตรา MD (Master Data)</h1>
+    <div className="px-4 py-6 sm:px-8 sm:py-8">
+      <h1 className="text-xl font-semibold text-zinc-900 sm:text-2xl">ตั้งค่าอัตรา MD (Master Data)</h1>
       <p className="mt-1 text-zinc-600">
         อัตราต้นทุน (บาท/MD) ต่อระดับ — ใช้คำนวณ cost แนะนำและ breakdown ในหน้ารายละเอียด
         ไม่มีผลกับ cost ของรายการเก่าที่บันทึกไว้แล้ว
@@ -207,8 +211,8 @@ export default function SettingsPage() {
         </div>
       ) : (
         <>
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-zinc-100 bg-white shadow-sm shadow-zinc-200/60">
-            <table className="w-full text-left text-sm">
+          <div className="mt-6 surface-card p-3 sm:overflow-x-auto sm:p-0">
+            <table className="table-responsive w-full text-left text-sm">
               <thead className="text-xs text-zinc-400">
                 <tr>
                   <th className="px-4 py-3 font-medium">ระดับ / Role</th>
@@ -234,7 +238,7 @@ export default function SettingsPage() {
                     const d = draftOf(e);
                     return (
                       <tr key={e.role} className="border-t border-zinc-100 hover:bg-zinc-50/60">
-                      <td className="px-4 py-2.5">
+                      <td data-label="ระดับ / Role" className="px-4 py-2.5">
                         <input
                           value={d.label}
                           onChange={(ev) =>
@@ -243,7 +247,7 @@ export default function SettingsPage() {
                           className="w-full max-w-xs rounded-lg border border-transparent bg-transparent px-2 py-1 hover:border-zinc-200 focus:border-zinc-300 focus:bg-white focus:outline-none"
                         />
                       </td>
-                      <td className="px-4 py-2.5 whitespace-nowrap">
+                      <td data-label="Key" className="px-4 py-2.5 whitespace-nowrap">
                         <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-mono text-xs text-zinc-600">
                           {e.role}
                         </span>
@@ -257,7 +261,7 @@ export default function SettingsPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-right">
+                      <td data-label="อัตรา (บาท/MD)" className="px-4 py-2.5 text-right">
                         <input
                           type="number"
                           value={d.rate}
@@ -267,7 +271,7 @@ export default function SettingsPage() {
                           className="w-28 rounded-lg border border-zinc-200 px-2 py-1 text-right focus:outline-none focus:ring-2 focus:ring-zinc-300"
                         />
                       </td>
-                      <td className="px-4 py-2.5 whitespace-nowrap text-xs text-zinc-400">
+                      <td data-label="แก้ไขล่าสุด" className="px-4 py-2.5 whitespace-nowrap text-xs text-zinc-400">
                         {e.updated_by ?? "-"}
                         {e.updated_at && ` · ${formatDateTime(e.updated_at)}`}
                       </td>
@@ -325,43 +329,42 @@ export default function SettingsPage() {
                 เพิ่มระดับใหม่
               </button>
             ) : (
-              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-100 bg-white p-3 shadow-sm shadow-zinc-200/60">
+              <div className="flex w-full flex-col gap-2 surface-card p-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                 <input
                   value={newRow.label}
                   onChange={(e) => setNewRow((n) => ({ ...n, label: e.target.value }))}
                   placeholder="ชื่อระดับ เช่น Manager-Product"
-                  className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                  className="control"
                 />
                 <input
                   value={newRow.role}
                   onChange={(e) => setNewRow((n) => ({ ...n, role: e.target.value }))}
                   placeholder="key เช่น manager_product"
-                  className="w-44 rounded-lg border border-zinc-200 px-3 py-1.5 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                  className="control font-mono text-xs sm:w-44"
                 />
                 <input
                   type="number"
                   value={newRow.rate}
                   onChange={(e) => setNewRow((n) => ({ ...n, rate: e.target.value }))}
                   placeholder="บาท/MD"
-                  className="w-28 rounded-lg border border-zinc-200 px-3 py-1.5 text-right text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                  className="control text-right sm:w-28"
                 />
-                <button
-                  onClick={() => saveRow(newRow.role || newRow.label, newRow.label, newRow.rate)}
-                  disabled={!(newRow.role || newRow.label) || !newRow.rate || savingRole != null}
-                  className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-                >
-                  เพิ่ม
-                </button>
-                <button
-                  onClick={() => setShowAdd(false)}
-                  className="text-sm text-zinc-500 hover:underline"
-                >
-                  ยกเลิก
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => saveRow(newRow.role || newRow.label, newRow.label, newRow.rate)}
+                    disabled={!(newRow.role || newRow.label) || !newRow.rate || savingRole != null}
+                    className="btn btn-primary flex-1 sm:flex-none"
+                  >
+                    เพิ่ม
+                  </button>
+                  <button onClick={() => setShowAdd(false)} className="btn btn-secondary flex-1 sm:flex-none">
+                    ยกเลิก
+                  </button>
+                </div>
               </div>
             )}
 
-            <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
+            <label className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 sm:w-auto sm:justify-start">
               <Upload size={15} />
               {importing ? "กำลัง import..." : "Import จาก Excel"}
               <input

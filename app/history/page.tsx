@@ -72,15 +72,21 @@ export default function HistoryPage() {
   const [detailItem, setDetailItem] = useState<CrItemRow | null>(null);
   const [itemLoadingId, setItemLoadingId] = useState<string | null>(null);
   const [itemError, setItemError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setLoadError(null);
     fetch(`/api/history?type=${tab}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`โหลดประวัติไม่สำเร็จ (${r.status})`);
+        return r.json();
+      })
       .then((json) => {
         if (tab === "search") setSearchLogs(json.logs ?? []);
         else setChangeLogs(json.logs ?? []);
       })
+      .catch((err) => setLoadError(err instanceof Error ? err.message : "โหลดประวัติไม่สำเร็จ"))
       .finally(() => setLoading(false));
   }, [tab]);
 
@@ -107,8 +113,8 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="px-8 py-8">
-      <h1 className="text-2xl font-semibold text-zinc-900">ประวัติการใช้งาน</h1>
+    <div className="px-4 py-6 sm:px-8 sm:py-8">
+      <h1 className="text-xl font-semibold text-zinc-900 sm:text-2xl">ประวัติการใช้งาน</h1>
 
       <div className="mt-4 inline-flex rounded-full border border-zinc-200 bg-white p-1">
         {(["search", "changes"] as const).map((t) => (
@@ -123,6 +129,10 @@ export default function HistoryPage() {
           </button>
         ))}
       </div>
+
+      {loadError && (
+        <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{loadError}</div>
+      )}
 
       {loading && <SkeletonCards />}
 
@@ -184,8 +194,8 @@ export default function HistoryPage() {
       )}
 
       {!loading && tab === "changes" && (
-        <div className="mt-6 overflow-x-auto rounded-2xl border border-zinc-100 bg-white shadow-sm shadow-zinc-200/60">
-          <table className="w-full text-left text-sm">
+        <div className="mt-6 surface-card p-3 sm:overflow-x-auto sm:p-0">
+          <table className="table-responsive w-full text-left text-sm">
             <thead className="text-xs text-zinc-400">
               <tr>
                 <th className="px-4 py-3 font-medium">เวลา</th>
@@ -202,17 +212,17 @@ export default function HistoryPage() {
                 const deleted = log.action === "delete";
                 return (
                   <tr key={log.id} className="border-t border-zinc-100 align-top hover:bg-zinc-50/60">
-                    <td className="px-4 py-3 whitespace-nowrap text-zinc-500">
+                    <td data-label="เวลา" className="px-4 py-3 whitespace-nowrap text-zinc-500">
                       {formatDateTime(log.created_at)}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-zinc-500">
+                    <td data-label="โดย" className="px-4 py-3 whitespace-nowrap text-zinc-500">
                       {log.created_by ?? "-"}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td data-label="การเปลี่ยนแปลง" className="px-4 py-3 whitespace-nowrap">
                       {ACTION_LABEL[log.action] ?? log.action}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">{(row?.module as string) ?? "-"}</td>
-                    <td className="max-w-lg px-4 py-3">
+                    <td data-label="Module" className="px-4 py-3 whitespace-nowrap">{(row?.module as string) ?? "-"}</td>
+                    <td data-label="Detail" className="max-w-lg px-4 py-3">
                       <p className="line-clamp-2 whitespace-pre-wrap">{(row?.detail as string) ?? "-"}</p>
                       {itemError === log.id && (
                         <p className="mt-1 text-xs text-red-500">เปิดรายการไม่ได้ (อาจถูกลบไปแล้ว)</p>

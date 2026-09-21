@@ -235,8 +235,8 @@ export default function EstimatePage() {
   }, [results, rows, rates]);
 
   return (
-    <div className="px-8 py-8">
-      <h1 className="flex items-center gap-2 text-2xl font-semibold text-zinc-900">
+    <div className="px-4 py-6 sm:px-8 sm:py-8">
+      <h1 className="flex items-center gap-2 text-xl font-semibold text-zinc-900 sm:text-2xl">
         <Calculator size={22} />
         Create Quotation
       </h1>
@@ -331,12 +331,12 @@ export default function EstimatePage() {
       )}
 
       {!loading && results.length > 0 && (
-        <div className="mt-8 flex items-center justify-between">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-zinc-500">พบเคสอ้างอิงสำหรับ {results.length} ข้อ</p>
           <button
             onClick={() => setShowQuoteModal(true)}
             disabled={totals.counted === 0}
-            className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-40"
+            className="btn btn-primary"
           >
             <FileSpreadsheet size={15} />
             สร้างใบเสนอราคา (Excel)
@@ -345,8 +345,8 @@ export default function EstimatePage() {
       )}
 
       {!loading && results.length > 0 && (
-        <div className="mt-3 overflow-x-auto rounded-2xl border border-zinc-100 bg-white shadow-sm shadow-zinc-200/60">
-          <table className="w-full text-left text-sm">
+        <div className="mt-3 surface-card p-3 sm:overflow-x-auto sm:p-0">
+          <table className="table-responsive w-full text-left text-sm">
             <thead className="text-xs text-zinc-400">
               <tr>
                 <th className="px-4 py-3 font-medium">รวม</th>
@@ -365,7 +365,7 @@ export default function EstimatePage() {
                 const lowConfidence = (match?.similarity ?? 0) < LOW_SIMILARITY;
                 return (
                   <tr key={i} className="border-t border-zinc-100 align-top hover:bg-zinc-50/60">
-                    <td className="px-4 py-3">
+                    <td data-label="รวม" className="px-4 py-3">
                       <input
                         type="checkbox"
                         checked={row?.included ?? false}
@@ -373,7 +373,7 @@ export default function EstimatePage() {
                         onChange={(e) => setRow(i, { included: e.target.checked })}
                       />
                     </td>
-                    <td className="max-w-xs px-4 py-3">
+                    <td data-label="Requirement" className="max-w-xs px-4 py-3">
                       <p className="whitespace-pre-wrap text-zinc-800">{r.requirement}</p>
                       {lowConfidence && (
                         <p className="mt-1 text-xs text-amber-600">
@@ -381,7 +381,7 @@ export default function EstimatePage() {
                         </p>
                       )}
                     </td>
-                    <td className="max-w-sm px-4 py-3">
+                    <td data-label="เคสอ้างอิง" className="max-w-sm px-4 py-3">
                       {r.matches.length === 0 ? (
                         <span className="text-zinc-400">ไม่พบ</span>
                       ) : (
@@ -406,7 +406,7 @@ export default function EstimatePage() {
                         </>
                       )}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td data-label="ใกล้เคียง" className="px-4 py-3 whitespace-nowrap">
                       {match && (
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${similarityBadge(match.similarity)}`}
@@ -415,7 +415,7 @@ export default function EstimatePage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right text-zinc-700">
+                    <td data-label="MD" className="px-4 py-3 text-right text-zinc-700">
                       {match && (
                         <div className="flex flex-col items-end gap-1">
                           <button
@@ -435,7 +435,7 @@ export default function EstimatePage() {
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap text-zinc-700">
+                    <td data-label="Cost" className="px-4 py-3 text-right whitespace-nowrap text-zinc-700">
                       {match &&
                         (() => {
                           const cost = computeCostBreakdown(effectiveBreakdown(i, match), rates).total;
