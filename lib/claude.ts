@@ -1,8 +1,47 @@
 import Anthropic from "@anthropic-ai/sdk";
+import type { DocInput } from "./docParse";
 import { formatMdBreakdown } from "./format";
 import type { CrItemMatch, MdBreakdown, SourceType } from "./types";
 
 const MODEL = "claude-sonnet-5";
+
+// Builds the user-turn content for a doc-based extraction call — PDFs go in
+// as a native document block (Claude reads them directly, including scanned
+// pages), text goes in as a plain instruction + the extracted text.
+function docContent(doc: DocInput, instruction: string): Anthropic.Messages.MessageParam["content"] {
+  if ("pdfBase64" in doc) {
+    return [
+      { type: "document", source: { type: "base64", media_type: "application/pdf", data: doc.pdfBase64 } },
+      { type: "text", text: instruction },
+    ];
+  }
+  return `${instruction}\n\n"""\n${doc.text}\n"""`;
+}
+
+// Empirically, some tool-call responses come back with an array field
+// double-encoded as a JSON string (e.g. `{ requirements: "[{...}]" }`
+// instead of `{ requirements: [{...}] }`) rather than the native array the
+// schema declares — reproduced consistently against claude-sonnet-5 for one
+// schema shape and not another, so this parses defensively for every
+// tool-call field read in this file instead of trusting either shape.
+function parseToolArrayField<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed as T[];
+      // The observed failure mode wraps the *whole* payload as a string
+      // under the same key, e.g. requirements: '{"requirements":[...]}'.
+      if (parsed && typeof parsed === "object") {
+        const nested = Object.values(parsed).find((v) => Array.isArray(v));
+        if (nested) return nested as T[];
+      }
+    } catch {
+      // fall through to empty
+    }
+  }
+  return [];
+}
 
 export interface ExtractedItemDraft {
   source_type_guess: SourceType;
@@ -20,8 +59,9 @@ const MD_ROLE_PROPERTIES = {
   fun_consultant: { type: "number", description: "Fun/Functional Consultant mandays" },
   fun_senior: { type: "number", description: "Fun/Functional Senior mandays" },
   dev_consultant: { type: "number", description: "Dev Consultant mandays" },
-  dev_senior_mgr: { type: "number", description: "Dev Senior & Manager mandays" },
-  manager: { type: "number", description: "Manager mandays" },
+  dev_senior: { type: "number", description: "Dev Senior mandays (dev work needing solution design, not just coding to a clear spec)" },
+  dev_manager: { type: "number", description: "Dev Manager mandays (Manager-Product tier — dev-side project/solution management, distinct from the general project Manager role)" },
+  manager: { type: "number", description: "Manager mandays (PM time spent on project management/customer meetings)" },
 } as const;
 
 const EXTRACT_TOOL = {
@@ -60,11 +100,14 @@ const EXTRACT_TOOL = {
   },
 };
 
-export async function extractItems(text: string): Promise<ExtractedItemDraft[]> {
+export async function extractItems(doc: DocInput): Promise<ExtractedItemDraft[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
 
   const client = new Anthropic({ apiKey });
+
+  const instruction =
+    "แยก requirement ของ CR/Customize จากเอกสาร/ข้อความนี้ออกมาเป็น item(s) (อาจมีมากกว่า 1 รายการถ้าพูดถึงหลาย requirement)\n\nสำคัญมาก: ห้ามเดาหรือประมาณตัวเลข MD/cost เอง — ใส่เฉพาะตัวเลขที่ระบุไว้ตรงๆในเอกสารเท่านั้น ถ้าไม่ได้บอกตัวเลข ให้ไม่ต้องใส่ field นั้นเลย";
 
   const message = await client.messages.create({
     model: MODEL,
@@ -72,19 +115,14 @@ export async function extractItems(text: string): Promise<ExtractedItemDraft[]> 
     thinking: { type: "disabled" },
     tools: [EXTRACT_TOOL],
     tool_choice: { type: "tool", name: "extract_items" },
-    messages: [
-      {
-        role: "user",
-        content: `แยก requirement ของ CR/Customize จากข้อความนี้ออกมาเป็น item(s) (อาจมีมากกว่า 1 รายการถ้าข้อความนี้พูดถึงหลาย requirement):\n\n"""\n${text}\n"""\n\nสำคัญมาก: ห้ามเดาหรือประมาณตัวเลข MD/cost เอง — ใส่เฉพาะตัวเลขที่ระบุไว้ตรงๆในข้อความเท่านั้น ถ้าข้อความไม่ได้บอกตัวเลข ให้ไม่ต้องใส่ field นั้นเลย`,
-      },
-    ],
+    messages: [{ role: "user", content: docContent(doc, instruction) }],
   });
 
   const toolUse = message.content.find((b) => b.type === "tool_use" && b.name === "extract_items");
   if (!toolUse || toolUse.type !== "tool_use") return [];
 
-  const input = toolUse.input as { items?: Partial<ExtractedItemDraft>[] };
-  return (input.items ?? []).map((item) => ({
+  const input = toolUse.input as { items?: unknown };
+  return parseToolArrayField<Partial<ExtractedItemDraft>>(input.items).map((item) => ({
     source_type_guess: item.source_type_guess ?? "new_customer",
     module: item.module ?? null,
     detail: item.detail ?? "",
@@ -94,6 +132,71 @@ export async function extractItems(text: string): Promise<ExtractedItemDraft[]> 
     cost: item.cost ?? null,
     md_breakdown: item.md_breakdown ?? {},
   }));
+}
+
+export interface ExtractedRequirement {
+  requirement: string;
+  guideline: string | null;
+}
+
+const REQUIREMENTS_TOOL = {
+  name: "extract_requirements",
+  description:
+    "Extract a list of discrete customer requirements from a document, each rewritten as one clear line suitable for searching a knowledge base of past CR/Customize cases.",
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      requirements: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            requirement: {
+              type: "string",
+              description: "One requirement, rewritten clearly and concisely (keep the source language, Thai or English)",
+            },
+            guideline: {
+              type: "string",
+              description: "Optional short note on complexity/ambiguity for this requirement, only if something about it genuinely needs flagging",
+            },
+          },
+          required: ["requirement"],
+        },
+      },
+    },
+    required: ["requirements"],
+  },
+};
+
+// Create Quotation's document-upload flow (feedback item 2.2): presale
+// uploads a customer requirement doc, this turns it into a plain
+// requirement list that slots into the exact same textarea/parsing path as
+// pasting text by hand — everything downstream (search, default-selected
+// matches, MD editing) stays unchanged.
+export async function extractRequirementsFromDocument(doc: DocInput): Promise<ExtractedRequirement[]> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+
+  const client = new Anthropic({ apiKey });
+  const instruction =
+    "แยก requirement ของลูกค้าจากเอกสารนี้ออกมาเป็นรายการ แต่ละรายการควรเป็น requirement เดียวที่ชัดเจน กระชับ พร้อมใช้ค้นหาในระบบ (ไม่ต้องสรุปรวมหลาย requirement เข้าด้วยกัน)";
+
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 3000,
+    thinking: { type: "disabled" },
+    tools: [REQUIREMENTS_TOOL],
+    tool_choice: { type: "tool", name: "extract_requirements" },
+    messages: [{ role: "user", content: docContent(doc, instruction) }],
+  });
+
+  const toolUse = message.content.find((b) => b.type === "tool_use" && b.name === "extract_requirements");
+  if (!toolUse || toolUse.type !== "tool_use") return [];
+
+  const input = toolUse.input as { requirements?: unknown };
+  return parseToolArrayField<Partial<ExtractedRequirement>>(input.requirements)
+    .map((r) => ({ requirement: r.requirement?.trim() ?? "", guideline: r.guideline?.trim() || null }))
+    .filter((r) => r.requirement.length > 0);
 }
 
 export async function synthesizeMatches(query: string, matches: CrItemMatch[]): Promise<string> {

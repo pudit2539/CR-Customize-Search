@@ -27,12 +27,19 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/items/[id]/
   const { data: counterpart, error } = await supabase
     .from("cr_items")
     .select(
-      "id, source_type, item_no, module, detail, md_breakdown, md_summary, cost, project, industry, remark"
+      "id, source_type, item_no, module, detail, md_breakdown, md_summary, cost, project, industry, remark, import_batch_id, import_batches(filename)"
     )
     .eq("source_type", otherSourceType)
     .eq("item_no", item.item_no)
     .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ counterpart: counterpart ?? null });
+  if (!counterpart) return NextResponse.json({ counterpart: null });
+
+  const { import_batches, ...rest } = counterpart as typeof counterpart & {
+    import_batches: { filename: string } | null;
+  };
+  return NextResponse.json({
+    counterpart: { ...rest, source_filename: import_batches?.filename ?? null },
+  });
 }

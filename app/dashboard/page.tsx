@@ -12,6 +12,10 @@ import {
   type ChartEvent,
   type ActiveElement,
 } from "chart.js";
+import { Building2, Download, List, Search, SlidersHorizontal, Users } from "lucide-react";
+import Autocomplete from "@/components/Autocomplete";
+import { allCategories } from "@/lib/moduleCategories";
+import { SOURCE_TYPE_LABEL } from "@/lib/format";
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
 
@@ -21,10 +25,20 @@ interface CategoryCount {
   existing_customer: number;
 }
 
+interface ClientCount {
+  name: string;
+  total: number;
+  new_customer: number;
+  existing_customer: number;
+  totalMd: number;
+  totalCost: number;
+}
+
 interface DashboardData {
   totalItems: number;
   bySourceType: { new_customer: number; existing_customer: number };
   byCategory: CategoryCount[];
+  byClient: ClientCount[];
   totalSearches: number;
 }
 
@@ -34,13 +48,37 @@ const EXISTING_COLOR = "#1baf7a";
 export default function DashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [sourceType, setSourceType] = useState("");
+  const [category, setCategory] = useState("");
+  const [project, setProject] = useState("");
+  const [clientSearch, setClientSearch] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef = useRef<Chart | null>(null);
+  const isAdmin = role === "admin";
 
-  useEffect(() => {
-    fetch("/api/dashboard")
+  const filterParams = {
+    ...(sourceType && { source_type: sourceType }),
+    ...(category && { category }),
+    ...(project && { project }),
+  };
+
+  // Accepts a project override so picking an autocomplete suggestion can
+  // filter immediately, instead of reading the not-yet-updated `project`
+  // state closed over by this render's `load`.
+  function load(overrides?: { project?: string }) {
+    const params = { ...filterParams, ...(overrides?.project && { project: overrides.project }) };
+    fetch(`/api/dashboard?${new URLSearchParams(params).toString()}`)
       .then((r) => r.json())
       .then(setData);
+  }
+
+  useEffect(() => {
+    load();
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((session) => setRole(session?.role ?? null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -53,13 +91,13 @@ export default function DashboardPage() {
         labels: data.byCategory.map((c) => c.category),
         datasets: [
           {
-            label: "ลูกค้าใหม่",
+            label: SOURCE_TYPE_LABEL.new_customer,
             data: data.byCategory.map((c) => c.new_customer),
             backgroundColor: NEW_COLOR,
             borderRadius: 4,
           },
           {
-            label: "ลูกค้าเดิม",
+            label: SOURCE_TYPE_LABEL.existing_customer,
             data: data.byCategory.map((c) => c.existing_customer),
             backgroundColor: EXISTING_COLOR,
             borderRadius: 4,
@@ -78,68 +116,238 @@ export default function DashboardPage() {
         onClick: (_event: ChartEvent, elements: ActiveElement[]) => {
           if (elements.length === 0) return;
           const { datasetIndex, index } = elements[0];
-          const category = data.byCategory[index]?.category;
-          const sourceType = datasetIndex === 0 ? "new_customer" : "existing_customer";
-          if (category) {
-            router.push(
-              `/items?category=${encodeURIComponent(category)}&source_type=${sourceType}`
-            );
+          const barCategory = data.byCategory[index]?.category;
+          const barSourceType = datasetIndex === 0 ? "new_customer" : "existing_customer";
+          if (barCategory) {
+            const params = new URLSearchParams({
+              category: barCategory,
+              source_type: barSourceType,
+              ...(project && { project }),
+            });
+            router.push(`/items?${params.toString()}`);
           }
         },
       },
     });
 
     return () => chartRef.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, router]);
 
   if (!data) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-10">
-        <p className="text-sm text-zinc-500">กำลังโหลด...</p>
+      <div className="animate-pulse px-8 py-8">
+        <div className="h-7 w-40 rounded bg-zinc-200" />
+        <div className="mt-6 h-16 rounded-2xl border border-zinc-100 bg-white shadow-sm shadow-zinc-200/60" />
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
+              <div className="h-9 w-9 rounded-lg bg-zinc-100" />
+              <div className="mt-3 h-3 w-20 rounded bg-zinc-100" />
+              <div className="mt-2 h-6 w-14 rounded bg-zinc-200" />
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 h-72 rounded-2xl border border-zinc-100 bg-white shadow-sm shadow-zinc-200/60" />
       </div>
     );
   }
 
+  const filteredClients = clientSearch
+    ? data.byClient.filter((c) => c.name.toLowerCase().includes(clientSearch.toLowerCase()))
+    : data.byClient;
+
+  const kpis = [
+    {
+      label: "รายการทั้งหมด",
+      value: data.totalItems,
+      icon: List,
+      card: "bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-200",
+      iconTint: "bg-white/20 text-white",
+      labelTint: "text-indigo-100",
+    },
+    {
+      label: SOURCE_TYPE_LABEL.new_customer,
+      value: data.bySourceType.new_customer,
+      icon: Users,
+      card: "bg-white text-zinc-900 border border-blue-100 shadow-sm shadow-zinc-200/60",
+      iconTint: "bg-blue-50 text-blue-600",
+      labelTint: "text-zinc-500",
+    },
+    {
+      label: SOURCE_TYPE_LABEL.existing_customer,
+      value: data.bySourceType.existing_customer,
+      icon: Building2,
+      card: "bg-white text-zinc-900 border border-emerald-100 shadow-sm shadow-zinc-200/60",
+      iconTint: "bg-emerald-50 text-emerald-600",
+      labelTint: "text-zinc-500",
+    },
+    {
+      label: "ค้นหาสะสม",
+      value: data.totalSearches,
+      icon: Search,
+      card: "bg-white text-zinc-900 border border-amber-100 shadow-sm shadow-zinc-200/60",
+      iconTint: "bg-amber-50 text-amber-600",
+      labelTint: "text-zinc-500",
+    },
+  ];
+
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+    <div className="px-8 py-8">
+      <h1 className="text-2xl font-semibold text-zinc-900">แดชบอร์ด</h1>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-lg bg-white border border-zinc-200 p-4">
-          <p className="text-xs text-zinc-500">รายการทั้งหมด</p>
-          <p className="mt-1 text-2xl font-semibold">{data.totalItems}</p>
-        </div>
-        <div className="rounded-lg bg-white border border-zinc-200 p-4">
-          <p className="text-xs text-zinc-500">ลูกค้าใหม่ (Presale)</p>
-          <p className="mt-1 text-2xl font-semibold">{data.bySourceType.new_customer}</p>
-        </div>
-        <div className="rounded-lg bg-white border border-zinc-200 p-4">
-          <p className="text-xs text-zinc-500">ลูกค้าเดิม (PM)</p>
-          <p className="mt-1 text-2xl font-semibold">{data.bySourceType.existing_customer}</p>
-        </div>
-        <div className="rounded-lg bg-white border border-zinc-200 p-4">
-          <p className="text-xs text-zinc-500">ค้นหาสะสม</p>
-          <p className="mt-1 text-2xl font-semibold">{data.totalSearches}</p>
+      <div className="mt-6 rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={sourceType}
+            onChange={(e) => setSourceType(e.target.value)}
+            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600"
+          >
+            <option value="">ทุกประเภท</option>
+            <option value="new_customer">{SOURCE_TYPE_LABEL.new_customer}</option>
+            <option value="existing_customer">{SOURCE_TYPE_LABEL.existing_customer}</option>
+          </select>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600"
+          >
+            <option value="">ทุกหมวด</option>
+            {allCategories().map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <Autocomplete
+            value={project}
+            onChange={setProject}
+            onSubmit={(v) => load({ project: v })}
+            suggestionType="project"
+            placeholder="ชื่อโปรเจกต์/ลูกค้า..."
+            className="w-48 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
+          />
+          <button
+            onClick={() => load()}
+            className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            <SlidersHorizontal size={14} />
+            กรองข้อมูล
+          </button>
+          <div className="ml-auto flex gap-2">
+            <a
+              href={`/items?${new URLSearchParams(filterParams).toString()}`}
+              className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              ดูรายการที่กรอง
+            </a>
+            {isAdmin && (
+              <a
+                href={`/api/export?${new URLSearchParams(filterParams).toString()}`}
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+              >
+                <Download size={15} />
+                Export
+              </a>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="mt-8 flex flex-wrap gap-4 text-xs text-zinc-500">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: NEW_COLOR }} />
-          ลูกค้าใหม่ (Presale)
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: EXISTING_COLOR }} />
-          ลูกค้าเดิม (PM)
-        </span>
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {kpis.map((k) => (
+          <div key={k.label} className={`rounded-2xl p-4 transition-transform hover:-translate-y-0.5 ${k.card}`}>
+            <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${k.iconTint}`}>
+              <k.icon size={17} />
+            </span>
+            <p className={`mt-3 text-xs ${k.labelTint}`}>{k.label}</p>
+            <p className="mt-1 text-2xl font-semibold">{k.value}</p>
+          </div>
+        ))}
       </div>
-      <div
-        className="relative mt-2 w-full"
-        style={{ height: Math.max(data.byCategory.length * 40 + 80, 240) }}
-      >
-        <canvas ref={canvasRef} role="img" aria-label="จำนวนรายการ CR/Customize แยกตามหมวดและประเภทลูกค้า" />
+
+      <div className="mt-4 rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm shadow-zinc-200/60">
+        <div className="flex flex-wrap gap-4 text-xs text-zinc-500">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: NEW_COLOR }} />
+            {SOURCE_TYPE_LABEL.new_customer}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: EXISTING_COLOR }} />
+            {SOURCE_TYPE_LABEL.existing_customer}
+          </span>
+        </div>
+        <div
+          className="relative mt-4 w-full"
+          style={{ height: Math.max(data.byCategory.length * 40 + 80, 240) }}
+        >
+          <canvas ref={canvasRef} role="img" aria-label="จำนวนรายการ CR/Customize แยกตามหมวดและประเภทลูกค้า" />
+        </div>
+        <p className="mt-2 text-xs text-zinc-400">คลิกแถบเพื่อดูรายการในหมวดนั้น</p>
       </div>
-      <p className="mt-2 text-xs text-zinc-400">คลิกแถบเพื่อดูรายการในหมวดนั้น</p>
+
+      <div className="mt-4 rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm shadow-zinc-200/60">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-zinc-900">รายละเอียดตามลูกค้า/โปรเจกต์</h2>
+            <p className="mt-0.5 text-xs text-zinc-400">
+              ทั้งหมด {data.byClient.length} เจ้า — คลิกชื่อเพื่อดูรายการของลูกค้านั้น
+            </p>
+          </div>
+          <div className="relative w-56">
+            <Search size={14} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400" />
+            <input
+              value={clientSearch}
+              onChange={(e) => setClientSearch(e.target.value)}
+              placeholder="ค้นหาชื่อลูกค้า..."
+              className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 max-h-96 overflow-y-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="sticky top-0 bg-white text-xs text-zinc-400">
+              <tr>
+                <th className="px-3 py-2 font-medium">ลูกค้า/โปรเจกต์</th>
+                <th className="px-3 py-2 text-right font-medium">รวมรายการ</th>
+                <th className="px-3 py-2 text-right font-medium">{SOURCE_TYPE_LABEL.new_customer}</th>
+                <th className="px-3 py-2 text-right font-medium">{SOURCE_TYPE_LABEL.existing_customer}</th>
+                <th className="px-3 py-2 text-right font-medium">รวม MD</th>
+                <th className="px-3 py-2 text-right font-medium">รวม Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredClients.map((c) => (
+                <tr key={c.name} className="border-t border-zinc-100 hover:bg-zinc-50/60">
+                  <td className="px-3 py-2">
+                    <button
+                      onClick={() => router.push(`/items?project=${encodeURIComponent(c.name)}`)}
+                      className="text-left text-zinc-800 hover:text-zinc-900 hover:underline"
+                    >
+                      {c.name}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2 text-right font-medium text-zinc-900">{c.total}</td>
+                  <td className="px-3 py-2 text-right text-blue-700">{c.new_customer || "-"}</td>
+                  <td className="px-3 py-2 text-right text-emerald-700">{c.existing_customer || "-"}</td>
+                  <td className="px-3 py-2 text-right text-zinc-600">{c.totalMd || "-"}</td>
+                  <td className="px-3 py-2 text-right text-zinc-600">
+                    {c.totalCost ? c.totalCost.toLocaleString() : "-"}
+                  </td>
+                </tr>
+              ))}
+              {filteredClients.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-3 py-6 text-center text-zinc-400">
+                    ไม่พบลูกค้าที่ตรงกับคำค้นหา
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

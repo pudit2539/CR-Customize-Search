@@ -1,10 +1,34 @@
 import { NextResponse } from "next/server";
 import { logChanges } from "@/lib/changeLog";
-import { requireAdmin } from "@/lib/dal";
+import { requireAdmin, requireAuth } from "@/lib/dal";
 import { embedDocuments } from "@/lib/embed";
 import { embeddingText } from "@/lib/parseExcel";
 import { getSupabaseClient } from "@/lib/supabase";
 import type { CrItemRow } from "@/lib/types";
+
+// Single-item fetch — lets the history page open the detail modal for a
+// logged item without loading the whole list.
+export async function GET(_request: Request, ctx: RouteContext<"/api/items/[id]">) {
+  const auth = await requireAuth();
+  if (auth.response) return auth.response;
+
+  const { id } = await ctx.params;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("cr_items")
+    .select(
+      "id, source_type, item_no, module, detail, md_breakdown, md_summary, cost, project, industry, check_note, priority, remark, timeline_followup, presale_note, import_batch_id, created_at, updated_at, import_batches(filename)"
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  const { import_batches, ...rest } = data as typeof data & {
+    import_batches: { filename: string } | null;
+  };
+  return NextResponse.json({ item: { ...rest, source_filename: import_batches?.filename ?? null } });
+}
 
 export async function PUT(request: Request, ctx: RouteContext<"/api/items/[id]">) {
   const auth = await requireAdmin();

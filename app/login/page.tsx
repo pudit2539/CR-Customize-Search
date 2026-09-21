@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Lock, LogIn, Sparkles, User } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,35 +33,59 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-sm flex-col px-6 py-24">
-      <h1 className="text-xl font-semibold">เข้าสู่ระบบ</h1>
-      <p className="mt-1 text-sm text-zinc-600">CR/Customize Search</p>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-100 via-zinc-100 to-zinc-200 px-4">
+      <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-8 shadow-xl shadow-zinc-200/60">
+        <div className="flex flex-col items-center text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm">
+            <Sparkles size={22} />
+          </span>
+          <h1 className="mt-4 text-xl font-semibold text-zinc-900">เข้าสู่ระบบ</h1>
+          <p className="mt-1 text-sm text-zinc-500">CR/Customize Search</p>
+        </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
-        <input
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Username"
-          autoComplete="username"
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm"
-        />
-        <input
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          type="password"
-          placeholder="Password"
-          autoComplete="current-password"
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm"
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading || !username || !password}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
-        >
-          {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="mt-7 flex flex-col gap-3">
+          <div className="relative">
+            <User size={16} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400" />
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Username"
+              autoComplete="username"
+              className="w-full rounded-lg border border-zinc-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-zinc-300"
+            />
+          </div>
+          <div className="relative">
+            <Lock size={16} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400" />
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type="password"
+              placeholder="Password"
+              autoComplete="current-password"
+              className="w-full rounded-lg border border-zinc-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-zinc-300"
+            />
+          </div>
+
+          {error && (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || !username || !password}
+            className="mt-1 flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-40"
+          >
+            {loading ? (
+              "กำลังเข้าสู่ระบบ..."
+            ) : (
+              <>
+                <LogIn size={15} />
+                เข้าสู่ระบบ
+              </>
+            )}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

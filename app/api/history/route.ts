@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from("search_logs")
       .select(
-        "id, query, mode, result_count, top_similarity, synthesis, created_by, created_at, cr_items:top_match_id(detail, module, source_type)"
+        "id, query, mode, result_count, top_similarity, synthesis, created_by, created_at, cr_items:top_match_id(id, detail, module, source_type)"
       )
       .order("created_at", { ascending: false })
       .limit(PAGE_SIZE);

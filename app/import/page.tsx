@@ -1,8 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Download, Upload } from "lucide-react";
 import ItemForm, { toApiPayload, type ItemFormValues } from "@/components/ItemForm";
 import type { ExtractedItemDraft } from "@/lib/claude";
+import { SOURCE_TYPE_LABEL } from "@/lib/format";
 
 interface ImportSummary {
   total: number;
@@ -62,6 +64,14 @@ function ExcelUploadTab() {
         อัพโหลดไฟล์เดิมซ้ำได้ตลอด รายการที่มีอยู่แล้วจะถูกอัพเดท ไม่สร้างซ้ำ
       </p>
 
+      <a
+        href="/api/import/template"
+        className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+      >
+        <Download size={15} />
+        ดาวน์โหลด Template ว่าง (กรอกง่าย, ใช้ format เดียวกับ import ได้เลย)
+      </a>
+
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -97,7 +107,7 @@ function ExcelUploadTab() {
       <button
         onClick={handleUpload}
         disabled={loading || !selectedFile}
-        className="mt-4 rounded-lg bg-zinc-900 px-5 py-2 text-sm font-medium text-white disabled:opacity-40"
+        className="mt-4 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white disabled:opacity-40"
       >
         {loading ? "กำลังนำเข้า... (อาจใช้เวลาสักครู่)" : "นำเข้า"}
       </button>
@@ -111,7 +121,8 @@ function ExcelUploadTab() {
             เพิ่มใหม่ {summary.inserted} รายการ, อัพเดท {summary.updated} รายการ
           </p>
           <p className="mt-1 text-zinc-600">
-            ลูกค้าใหม่: {summary.by_source.new_customer} · ลูกค้าเดิม: {summary.by_source.existing_customer}
+            {SOURCE_TYPE_LABEL.new_customer}: {summary.by_source.new_customer} ·{" "}
+            {SOURCE_TYPE_LABEL.existing_customer}: {summary.by_source.existing_customer}
           </p>
         </div>
       )}
@@ -134,7 +145,8 @@ function draftToFormValues(draft: ExtractedItemDraft): ItemFormValues {
       fun_consultant: numToStr(draft.md_breakdown.fun_consultant),
       fun_senior: numToStr(draft.md_breakdown.fun_senior),
       dev_consultant: numToStr(draft.md_breakdown.dev_consultant),
-      dev_senior_mgr: numToStr(draft.md_breakdown.dev_senior_mgr),
+      dev_senior: numToStr(draft.md_breakdown.dev_senior),
+      dev_manager: numToStr(draft.md_breakdown.dev_manager),
       manager: numToStr(draft.md_breakdown.manager),
     },
   };
@@ -146,22 +158,23 @@ function PasteExtractTab() {
   const [error, setError] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<ItemFormValues[]>([]);
   const [savedCount, setSavedCount] = useState(0);
+  const fileInput = useRef<HTMLInputElement>(null);
 
-  async function handleExtract() {
-    if (!text.trim()) return;
+  async function runExtract(body: FormData | { text: string }) {
     setExtracting(true);
     setError(null);
     try {
-      const res = await fetch("/api/items/extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
+      const res = await fetch(
+        "/api/items/extract",
+        body instanceof FormData
+          ? { method: "POST", body }
+          : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+      );
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "แยกข้อความไม่สำเร็จ");
+      if (!res.ok) throw new Error(json.error ?? "แยกข้อมูลไม่สำเร็จ");
       const extracted: ExtractedItemDraft[] = json.drafts ?? [];
       if (extracted.length === 0) {
-        setError("AI ไม่พบ requirement ที่แยกออกมาได้จากข้อความนี้");
+        setError("AI ไม่พบ requirement ที่แยกออกมาได้");
         return;
       }
       setDrafts(extracted.map(draftToFormValues));
@@ -171,6 +184,19 @@ function PasteExtractTab() {
     } finally {
       setExtracting(false);
     }
+  }
+
+  function handleExtract() {
+    if (!text.trim()) return;
+    runExtract({ text });
+  }
+
+  function handleFileExtract(file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    runExtract(form).finally(() => {
+      if (fileInput.current) fileInput.current.value = "";
+    });
   }
 
   async function saveDraft(index: number, values: ItemFormValues) {
@@ -188,8 +214,9 @@ function PasteExtractTab() {
   return (
     <div>
       <p className="text-zinc-600">
-        วางข้อความ requirement ที่ได้รับมา (ไม่ต้องเป็นรูปแบบตายตัว) — AI จะช่วยแยกเป็นรายการให้ตรวจสอบ/แก้ไขก่อนบันทึก
-        ตัวเลข MD/Cost จะใส่ให้เฉพาะที่ระบุไว้ในข้อความจริงๆเท่านั้น จะไม่เดาให้
+        วางข้อความ requirement ที่ได้รับมา หรืออัปโหลดไฟล์ Word/Excel ที่ไม่มี format ตายตัว
+        (เช่น team Implement/PM กรอกผ่าน Word เอง) — AI จะช่วยแยกเป็นรายการให้ตรวจสอบ/แก้ไขก่อนบันทึก
+        ตัวเลข MD/Cost จะใส่ให้เฉพาะที่ระบุไว้ในเอกสารจริงๆเท่านั้น จะไม่เดาให้
       </p>
 
       <textarea
@@ -199,13 +226,28 @@ function PasteExtractTab() {
         placeholder="เช่น: ลูกค้า ABC อยากให้เพิ่มเงื่อนไขการคำนวณ OT แยกตามกะ... (Module: TM, ประมาณ 3 MD)"
         className="mt-4 w-full resize-none rounded-lg border border-zinc-300 bg-white p-3 text-sm"
       />
-      <button
-        onClick={handleExtract}
-        disabled={extracting || !text.trim()}
-        className="mt-3 rounded-lg bg-zinc-900 px-5 py-2 text-sm font-medium text-white disabled:opacity-40"
-      >
-        {extracting ? "กำลังวิเคราะห์..." : "วิเคราะห์ด้วย AI"}
-      </button>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button
+          onClick={handleExtract}
+          disabled={extracting || !text.trim()}
+          className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white disabled:opacity-40"
+        >
+          {extracting ? "กำลังวิเคราะห์..." : "วิเคราะห์ข้อความด้วย AI"}
+        </button>
+        <span className="text-xs text-zinc-400">หรือ</span>
+        <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
+          <Upload size={15} />
+          {extracting ? "กำลังวิเคราะห์..." : "อัปโหลดไฟล์ Word/Excel ที่ไม่มี format"}
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".docx,.xlsx,.pdf"
+            className="hidden"
+            disabled={extracting}
+            onChange={(e) => e.target.files?.[0] && handleFileExtract(e.target.files[0])}
+          />
+        </label>
+      </div>
 
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
       {savedCount > 0 && (
@@ -245,7 +287,7 @@ export default function ImportPage() {
           onClick={() => setTab("excel")}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             tab === "excel"
-              ? "bg-zinc-900 text-white"
+              ? "bg-indigo-600 text-white"
               : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-100"
           }`}
         >
@@ -255,7 +297,7 @@ export default function ImportPage() {
           onClick={() => setTab("paste")}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             tab === "paste"
-              ? "bg-zinc-900 text-white"
+              ? "bg-indigo-600 text-white"
               : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-100"
           }`}
         >

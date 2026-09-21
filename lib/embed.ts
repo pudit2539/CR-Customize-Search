@@ -1,4 +1,4 @@
-const VOYAGE_MODEL = "voyage-3-lite"; // 512-dim output, matches supabase/schema.sql
+const VOYAGE_MODEL = "voyage-3-large"; // 1024-dim output, matches supabase/schema.sql
 
 interface VoyageEmbeddingResponse {
   data: { embedding: number[] }[];
@@ -35,4 +35,9 @@ export async function embedDocuments(texts: string[]): Promise<number[][]> {
 export async function embedQuery(text: string): Promise<number[]> {
   const [vector] = await embed([text], "query");
   return vector;
+}
+
+// Batch variant for the estimator — one Voyage call for many requirements.
+export async function embedQueries(texts: string[]): Promise<number[][]> {
+  return embed(texts, "query");
 }

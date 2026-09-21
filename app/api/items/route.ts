@@ -26,6 +26,8 @@ export async function GET(request: Request) {
   if (module) query = query.eq("module", module);
   const industry = searchParams.get("industry");
   if (industry) query = query.ilike("industry", `%${industry}%`);
+  const project = searchParams.get("project");
+  if (project) query = query.ilike("project", `%${project}%`);
   const keyword = searchParams.get("keyword");
   if (keyword) query = query.ilike("detail", `%${keyword}%`);
 

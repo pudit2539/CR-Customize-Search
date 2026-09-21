@@ -196,3 +196,132 @@ as $$
   order by cr.embedding <=> query_embedding
   limit match_count;
 $$;
+
+-- ===== MD rate master data (v2) =====
+-- md_rates becomes an editable master table: human labels, editor
+-- attribution, and a full audit trail in md_rate_changes. The 6 original
+-- roles still feed cost suggestions (ItemForm / detail modal); rows added
+-- beyond those are reference-only and can be deleted freely.
+alter table md_rates drop constraint if exists md_rates_role_check;
+alter table md_rates add column if not exists label text;
+alter table md_rates add column if not exists updated_by text;
+
+create table if not exists md_rate_changes (
+  id uuid primary key default gen_random_uuid(),
+  role text not null,
+  action text not null check (action in ('insert', 'update', 'delete', 'import')),
+  before jsonb,
+  after jsonb,
+  created_by text,
+  created_at timestamptz not null default now()
+);
+
+update md_rates set label = v.label
+from (values
+  ('fun_junior', 'Functional - Junior'),
+  ('fun_consultant', 'Functional - Consultant'),
+  ('fun_senior', 'Functional - Senior'),
+  ('dev_consultant', 'Dev - Consultant'),
+  ('dev_senior_mgr', 'Dev - Senior/Manager'),
+  ('manager', 'Project Manager (Manager-Im)')
+) as v(role, label)
+where md_rates.role = v.role and md_rates.label is null;
+
+-- ===== STD candidate export (feature #4 from the original roadmap) =====
+-- A lightweight nomination list: any logged-in user can flag a cr_items row
+-- as worth reviewing for standardization, with a short note on why. The
+-- actual STD/reject decision happens offline (พี่ยอด/พี่แชมป์ reply inside
+-- the exported Excel) — this table only tracks who nominated what and why,
+-- not the outcome.
+create table if not exists std_candidates (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references cr_items(id) on delete cascade,
+  note text,
+  created_by text,
+  created_at timestamptz not null default now(),
+  unique (item_id)
+);
+
+-- ===== Embedding model upgrade: voyage-3-lite -> voyage-3-large =====
+-- Paraphrase testing showed voyage-3-lite (512-dim) gave weak separation
+-- between genuinely related paraphrased requirements and unrelated ones
+-- (~35-65% vs a ~30% unrelated baseline). voyage-3-large (1024-dim) scored
+-- noticeably higher on the same paraphrase pairs with the same baseline,
+-- so it's worth the migration + full re-embed.
+drop index if exists cr_items_embedding_idx;
+alter table cr_items alter column embedding type vector(1024) using null;
+create index cr_items_embedding_idx on cr_items using hnsw (embedding vector_cosine_ops);
+
+drop function if exists match_cr_items(vector, int, text);
+
+create function match_cr_items(
+  query_embedding vector(1024),
+  match_count int default 10,
+  filter_source_type text default null
+)
+returns table (
+  id uuid,
+  source_type text,
+  item_no int,
+  module text,
+  detail text,
+  md_breakdown jsonb,
+  md_summary numeric,
+  cost numeric,
+  project text,
+  industry text,
+  check_note text,
+  priority text,
+  remark text,
+  timeline_followup text,
+  presale_note text,
+  import_batch_id uuid,
+  source_filename text,
+  similarity float
+)
+language sql stable
+as $$
+  select
+    cr.id, cr.source_type, cr.item_no, cr.module, cr.detail, cr.md_breakdown,
+    cr.md_summary, cr.cost, cr.project, cr.industry, cr.check_note, cr.priority,
+    cr.remark, cr.timeline_followup, cr.presale_note, cr.import_batch_id,
+    ib.filename as source_filename,
+    1 - (cr.embedding <=> query_embedding) as similarity
+  from cr_items cr
+  left join import_batches ib on ib.id = cr.import_batch_id
+  where cr.embedding is not null
+    and (filter_source_type is null or cr.source_type = filter_source_type)
+  order by cr.embedding <=> query_embedding
+  limit match_count;
+$$;
+
+-- ===== Split "Dev Senior & Mgr" into separate Dev Senior / Dev Manager rates =====
+-- Was one blended rate (7,350, not on the real rate card). Per 2026-07-24
+-- feedback: Dev Senior should track the same tier as Fun Senior (6,300), Dev
+-- Manager should be its own tier (Manager-Product, 9,450). The old
+-- dev_senior_mgr role/rate row is kept (relabeled, no longer "core") so
+-- existing history/data isn't lost — cr_items.md_breakdown rows written
+-- before this migration keep their combined figure under that key.
+insert into md_rates (role, label, rate) values
+  ('dev_senior', 'Dev - Senior', 6300),
+  ('dev_manager', 'Dev - Manager (Manager-Product)', 9450)
+on conflict (role) do nothing;
+
+update md_rates set label = 'Dev - Senior/Manager (เดิม, เลิกใช้)'
+where role = 'dev_senior_mgr' and label is distinct from 'Dev - Senior/Manager (เดิม, เลิกใช้)';
+
+-- ===== Lightweight match-confirmation feedback loop =====
+-- Practical answer to "the system should get smarter from usage" (feedback
+-- item 7.3): there's no model fine-tuning pipeline here, so instead the app
+-- lets users confirm a search/estimate match was actually correct, and
+-- rerank.ts uses the accumulated count as a small ranking boost — frequently
+-- confirmed items surface a little higher over time.
+create table if not exists match_feedback (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references cr_items(id) on delete cascade,
+  query text,
+  created_by text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists match_feedback_item_id_idx on match_feedback (item_id);

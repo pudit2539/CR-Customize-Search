@@ -5,8 +5,14 @@ export interface MdBreakdown {
   fun_consultant: number | null;
   fun_senior: number | null;
   dev_consultant: number | null;
-  dev_senior_mgr: number | null;
+  dev_senior: number | null;
+  dev_manager: number | null;
   manager: number | null;
+  // Legacy: before Dev Senior and Dev Manager were split into separate rates,
+  // both were recorded as one combined figure under this key. Old rows may
+  // still carry it — never migrated automatically (no reliable way to guess
+  // the split retroactively) and never written to by new items.
+  dev_senior_mgr?: number | null;
 }
 
 export interface CrItemRow {
