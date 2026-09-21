@@ -55,7 +55,9 @@ type SearchMode = "all" | "new_customer" | "existing_customer";
 export default function Home() {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<SearchMode>("all");
-  const [query, setQuery] = useState("");
+  // Prefilled from the sidebar's "Quick Actions" search box (/?q=...) — lazy
+  // initializer so this only reads the URL once, on mount.
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [synthesis, setSynthesis] = useState<string | null>(null);
@@ -83,17 +85,11 @@ export default function Home() {
     }
   }
 
-  // Prefilled from the sidebar's "Quick Actions" search box (/?q=...) —
-  // just fills the box, doesn't auto-search, so the user can review/pick a
-  // mode first.
   useEffect(() => {
-    const q = searchParams.get("q");
-    if (q) setQuery(q);
     fetch("/api/dashboard")
       .then((r) => r.json())
       .then((json) => setTotalItems(json.totalItems ?? null))
       .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleSearch(q?: string) {

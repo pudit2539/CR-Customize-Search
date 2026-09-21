@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { requireAdmin } from "@/lib/dal";
-import { CORE_ROLES, DEFAULT_RATES, type MdRates } from "@/lib/mdRates";
+import { DEFAULT_RATES, type MdRates } from "@/lib/mdRates";
 import { getSupabaseClient } from "@/lib/supabase";
 
 const BRAND_RED = "C8102E";

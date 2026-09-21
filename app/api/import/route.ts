@@ -10,7 +10,8 @@ const EMBED_BATCH_SIZE = 50;
 // Drop the raw vector before writing a change-log snapshot — nobody reviewing
 // history needs 512 floats, and it would bloat the log fast at 200+ rows/import.
 function withoutEmbedding<T extends Record<string, unknown>>(row: T) {
-  const { embedding: _embedding, ...rest } = row;
+  const rest = { ...row };
+  delete rest.embedding;
   return rest;
 }
 

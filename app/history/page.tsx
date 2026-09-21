@@ -75,6 +75,7 @@ export default function HistoryPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag for the fetch this effect starts, not derived/external state
     setLoading(true);
     setLoadError(null);
     fetch(`/api/history?type=${tab}`)

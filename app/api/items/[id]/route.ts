@@ -46,10 +46,10 @@ export async function PUT(request: Request, ctx: RouteContext<"/api/items/[id]">
   // unnecessary Voyage call on every metadata-only edit (e.g. fixing a typo
   // in Remark).
   if (body.detail || body.module !== undefined) {
-    const module = body.module !== undefined ? body.module : before?.module ?? null;
+    const moduleCode = body.module !== undefined ? body.module : before?.module ?? null;
     const detail = body.detail ?? before?.detail;
     if (detail) {
-      const [embedding] = await embedDocuments([embeddingText({ module, detail })]);
+      const [embedding] = await embedDocuments([embeddingText({ module: moduleCode, detail })]);
       updates.embedding = embedding;
     }
   }

@@ -80,6 +80,7 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load() clears the error flag for the fetch it starts, not derived/external state
     load();
     fetch("/api/auth/me")
       .then((r) => r.json())

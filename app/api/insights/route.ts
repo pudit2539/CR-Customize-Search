@@ -108,12 +108,12 @@ export async function GET() {
   // giant "unknown" bar — skip them; the chart is about known modules.
   const moduleCounts = new Map<string, number>();
   for (const row of modulesRes.data ?? []) {
-    const module = (row.module as string | null)?.trim();
-    if (!module) continue;
-    moduleCounts.set(module, (moduleCounts.get(module) ?? 0) + 1);
+    const moduleName = (row.module as string | null)?.trim();
+    if (!moduleName) continue;
+    moduleCounts.set(moduleName, (moduleCounts.get(moduleName) ?? 0) + 1);
   }
   const topModules = [...moduleCounts.entries()]
-    .map(([module, count]) => ({ module, count }))
+    .map(([moduleName, count]) => ({ module: moduleName, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 

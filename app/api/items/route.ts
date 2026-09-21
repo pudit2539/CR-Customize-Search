@@ -27,8 +27,8 @@ export async function GET(request: Request) {
 
   const sourceType = searchParams.get("source_type");
   if (sourceType) query = query.eq("source_type", sourceType);
-  const module = searchParams.get("module");
-  if (module) query = query.eq("module", module);
+  const moduleCode = searchParams.get("module");
+  if (moduleCode) query = query.eq("module", moduleCode);
   const industry = searchParams.get("industry");
   if (industry) query = query.ilike("industry", `%${industry}%`);
   const project = searchParams.get("project");

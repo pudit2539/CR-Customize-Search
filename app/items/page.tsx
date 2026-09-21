@@ -84,6 +84,7 @@ export default function ItemsPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load() sets the loading flag for the fetch it starts, not derived/external state
     load();
     fetch("/api/auth/me")
       .then((r) => r.json())

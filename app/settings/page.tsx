@@ -119,7 +119,8 @@ export default function SettingsPage() {
       const json = await res.json();
       if (applyResponse(json)) {
         setDrafts((d) => {
-          const { [role]: _drop, ...rest } = d;
+          const rest = { ...d };
+          delete rest[role];
           return rest;
         });
         setMessage("บันทึกแล้ว");

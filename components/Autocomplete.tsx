@@ -39,16 +39,16 @@ export default function Autocomplete({
     debounceRef.current = setTimeout(() => {
       fetch(`/api/suggestions?type=${suggestionType}&q=${encodeURIComponent(value.trim())}`)
         .then((r) => r.json())
-        .then((json) => setSuggestions(json.suggestions ?? []))
+        .then((json) => {
+          setSuggestions(json.suggestions ?? []);
+          setHighlighted(-1);
+        })
         .catch(() => {});
     }, 200);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, suggestionType]);
-
-  useEffect(() => setHighlighted(-1), [suggestions]);
 
   function pick(suggestion: string) {
     onChange(suggestion);

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { MD_ROLE_LABEL, SOURCE_TYPE_LABEL } from "@/lib/format";
 import { CORE_ROLES, computeCostBreakdown, DEFAULT_RATES, type CoreRole, type MdRates } from "@/lib/mdRates";
-import type { MdBreakdown, SourceType } from "@/lib/types";
+import type { SourceType } from "@/lib/types";
 
 export interface ItemFormValues {
   source_type: SourceType;

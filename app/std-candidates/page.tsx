@@ -41,7 +41,10 @@ export default function StdCandidatesPage() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(load, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load() sets the loading flag for the fetch it starts, not derived/external state
+    load();
+  }, []);
 
   // Grouped by product-area category (same buckets as /items) so the
   // product team can review one area at a time instead of one long flat
