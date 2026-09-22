@@ -186,9 +186,9 @@ export default function DashboardPage() {
       label: "รายการทั้งหมด",
       value: data.totalItems,
       icon: List,
-      card: "bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-200",
+      card: "bg-gradient-to-br from-[#d21b3c] to-[var(--brand-dark)] text-white shadow-lg shadow-red-200",
       iconTint: "bg-white/20 text-white",
-      labelTint: "text-indigo-100",
+      labelTint: "text-red-100",
     },
     {
       label: SOURCE_TYPE_LABEL.new_customer,

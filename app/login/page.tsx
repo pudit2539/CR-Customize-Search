@@ -36,7 +36,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-100 via-zinc-100 to-zinc-200 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-8 shadow-xl shadow-zinc-200/60">
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm">
+          <span className="icon-badge h-12 w-12 rounded-2xl">
             <Sparkles size={22} />
           </span>
           <h1 className="mt-4 text-xl font-semibold text-zinc-900">เข้าสู่ระบบ</h1>
@@ -51,7 +51,7 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Username"
               autoComplete="username"
-              className="w-full rounded-lg border border-zinc-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-zinc-300"
+              className="control w-full py-2.5 pl-9"
             />
           </div>
           <div className="relative">
@@ -62,7 +62,7 @@ export default function LoginPage() {
               type="password"
               placeholder="Password"
               autoComplete="current-password"
-              className="w-full rounded-lg border border-zinc-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-zinc-300"
+              className="control w-full py-2.5 pl-9"
             />
           </div>
 
@@ -73,7 +73,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || !username || !password}
-            className="mt-1 flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-40"
+            className="btn btn-primary mt-1 py-2.5"
           >
             {loading ? (
               "กำลังเข้าสู่ระบบ..."

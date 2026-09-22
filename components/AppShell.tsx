@@ -30,7 +30,7 @@ export default function AppShell({
         >
           <Menu size={20} />
         </button>
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white">
+        <span className="icon-badge h-7 w-7 shrink-0 rounded-lg">
           <Sparkles size={14} />
         </span>
         <span className="text-sm font-semibold">CR Search</span>

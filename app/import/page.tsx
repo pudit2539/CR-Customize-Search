@@ -107,7 +107,7 @@ function ExcelUploadTab() {
       <button
         onClick={handleUpload}
         disabled={loading || !selectedFile}
-        className="mt-4 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white disabled:opacity-40"
+        className="btn btn-primary mt-4"
       >
         {loading ? "กำลังนำเข้า... (อาจใช้เวลาสักครู่)" : "นำเข้า"}
       </button>
@@ -230,7 +230,7 @@ function PasteExtractTab() {
         <button
           onClick={handleExtract}
           disabled={extracting || !text.trim()}
-          className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white disabled:opacity-40"
+          className="btn btn-primary"
         >
           {extracting ? "กำลังวิเคราะห์..." : "วิเคราะห์ข้อความด้วย AI"}
         </button>
@@ -292,7 +292,7 @@ export default function ImportPage() {
           onClick={() => setTab("excel")}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             tab === "excel"
-              ? "bg-indigo-600 text-white"
+              ? "bg-[var(--brand)] text-white"
               : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-100"
           }`}
         >
@@ -302,7 +302,7 @@ export default function ImportPage() {
           onClick={() => setTab("paste")}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             tab === "paste"
-              ? "bg-indigo-600 text-white"
+              ? "bg-[var(--brand)] text-white"
               : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-100"
           }`}
         >

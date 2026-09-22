@@ -131,7 +131,7 @@ export default function HistoryPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              tab === t ? "bg-indigo-600 text-white" : "text-zinc-500 hover:text-zinc-900"
+              tab === t ? "bg-[var(--brand)] text-white" : "text-zinc-500 hover:text-zinc-900"
             }`}
           >
             {t === "search" ? "ประวัติการค้นหา" : "ประวัติการแก้ไขข้อมูล"}

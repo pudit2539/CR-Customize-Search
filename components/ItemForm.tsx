@@ -106,7 +106,7 @@ export default function ItemForm({
             type="button"
             onClick={() => setField("source_type", st)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              values.source_type === st ? "bg-indigo-600 text-white" : "text-zinc-500 hover:text-zinc-900"
+              values.source_type === st ? "bg-[var(--brand)] text-white" : "text-zinc-500 hover:text-zinc-900"
             }`}
           >
             {SOURCE_TYPE_LABEL[st]}
@@ -211,7 +211,7 @@ export default function ItemForm({
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-40"
+          className="btn btn-primary"
         >
           {saving ? "กำลังบันทึก..." : saveLabel}
         </button>

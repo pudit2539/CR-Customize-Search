@@ -144,9 +144,10 @@ export default function Home() {
             onClick={() => setMode(m)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
               mode === m
-                ? "bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-sm shadow-indigo-300/50"
+                ? "shadow-sm shadow-red-300/50"
                 : "text-zinc-500 hover:text-zinc-900"
             }`}
+            style={mode === m ? { background: "var(--brand-gradient)", color: "#fff" } : undefined}
           >
             {m === "all" ? "ทั้งหมด" : MODE_LABEL[m]}
           </button>
@@ -175,7 +176,7 @@ export default function Home() {
       {!loading && matches.length === 0 && !synthesis && (
         <div className="mt-5">
           <p className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
-            <Sparkles size={13} className="text-indigo-400" />
+            <Sparkles size={13} className="text-red-400" />
             ตัวอย่างที่ลองค้นหาได้
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -186,7 +187,7 @@ export default function Home() {
                   setQuery(eq);
                   handleSearch(eq);
                 }}
-                className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-600 shadow-sm shadow-zinc-200/40 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-md hover:shadow-indigo-100"
+                className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-600 shadow-sm shadow-zinc-200/40 transition-all hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50 hover:text-red-700 hover:shadow-md hover:shadow-red-100"
               >
                 {eq}
               </button>
@@ -297,7 +298,7 @@ export default function Home() {
               <div className="mt-3 flex items-center gap-4 border-t border-zinc-50 pt-2.5">
                 <button
                   onClick={() => setDetailItem(m)}
-                  className="text-xs font-medium text-zinc-600 hover:text-indigo-700 hover:underline"
+                  className="text-xs font-medium text-zinc-600 hover:text-red-700 hover:underline"
                 >
                   ดูรายละเอียด
                 </button>

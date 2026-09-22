@@ -215,7 +215,7 @@ export default function InsightsPage() {
                   className="w-full rounded-t bg-zinc-800 transition-colors group-hover:bg-zinc-600"
                   style={{ height: `${Math.max((d.count / maxPerDay) * 120, d.count > 0 ? 6 : 2)}px` }}
                 />
-                <span className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white opacity-0 group-hover:opacity-100">
+                <span className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 rounded bg-[var(--brand)] px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white opacity-0 group-hover:opacity-100">
                   {formatDate(d.day)}: {d.count}
                 </span>
               </div>

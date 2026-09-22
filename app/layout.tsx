@@ -31,7 +31,7 @@ export default async function RootLayout({
       lang="th"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-100 text-zinc-900">
+      <body className="min-h-full bg-gradient-to-br from-slate-50 via-red-50/20 to-slate-100 text-zinc-900">
         {session ? (
           <AppShell session={session}>{children}</AppShell>
         ) : (

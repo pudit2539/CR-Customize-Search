@@ -120,7 +120,7 @@ export default function ItemDetailModal({ item, onClose, canDelete, onDelete }: 
     <Modal title={`[${item.module ?? "-"}] รายละเอียด CR/Customize No.${item.item_no ?? "-"}`} onClose={onClose}>
       <div className="space-y-4 text-sm">
         <div className="rounded-xl border border-zinc-100 bg-zinc-50/60 p-4">
-          <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+          <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
             {MODE_LABEL[item.source_type]}
           </span>
           <p className="mt-2 whitespace-pre-wrap text-zinc-800">{item.detail}</p>

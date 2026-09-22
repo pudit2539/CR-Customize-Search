@@ -119,7 +119,7 @@ export default function StdCandidatesPage() {
           {groupedCategories.map(([category, group]) => (
             <div key={category}>
               <h2 className="flex items-center gap-2 text-sm font-semibold text-zinc-700">
-                <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs text-indigo-700">
+                <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs text-red-700">
                   {category}
                 </span>
                 <span className="text-xs font-normal text-zinc-400">{group.length} รายการ</span>

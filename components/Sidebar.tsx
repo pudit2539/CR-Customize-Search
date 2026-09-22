@@ -93,8 +93,8 @@ export default function Sidebar({
         title={collapsed ? item.label : undefined}
         className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-all ${
           active
-            ? "bg-indigo-50 font-semibold text-indigo-700 shadow-sm shadow-indigo-100"
-            : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+            ? "bg-[var(--brand)] font-semibold text-white shadow-sm shadow-black/20"
+            : "text-slate-400 hover:bg-white/5 hover:text-white"
         } ${collapsed ? "justify-center" : ""}`}
       >
         <Icon size={18} strokeWidth={2} className="shrink-0" />
@@ -114,27 +114,27 @@ export default function Sidebar({
         />
       )}
       <aside
-        className={`flex flex-col rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/70 transition-all
+        className={`flex flex-col rounded-2xl border border-white/5 bg-[#1a2233] p-4 shadow-lg shadow-black/20 transition-all
           fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] rounded-l-none md:rounded-l-2xl
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
           md:static md:z-auto md:h-full md:max-w-none md:translate-x-0
           ${collapsed ? "md:w-[76px]" : "md:w-64"}`}
       >
         <div className={collapsed ? "flex flex-col items-center gap-2 md:flex" : "flex items-center justify-between gap-2"}>
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-200">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#d21b3c] to-[var(--brand-dark)] text-white shadow-sm shadow-black/30">
             <Sparkles size={17} />
           </span>
-          {!collapsed && <span className="flex-1 text-base font-semibold whitespace-nowrap">CR Search</span>}
+          {!collapsed && <span className="flex-1 text-base font-semibold whitespace-nowrap text-white">CR Search</span>}
           <button
             onClick={onMobileClose}
-            className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 md:hidden"
+            className="rounded-md p-1.5 text-slate-400 hover:bg-white/5 hover:text-white md:hidden"
             aria-label="ปิดเมนู"
           >
             <X size={18} />
           </button>
           <button
             onClick={() => setCollapsed((c) => !c)}
-            className="hidden rounded-md p-1.5 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 md:block"
+            className="hidden rounded-md p-1.5 text-slate-400 hover:bg-white/5 hover:text-white md:block"
             title={collapsed ? "ขยายเมนู" : "ย่อเมนู"}
           >
             {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
@@ -143,36 +143,36 @@ export default function Sidebar({
 
       {!collapsed && (
         <>
-          <p className="mt-6 px-1 text-[11px] font-medium tracking-wide text-zinc-400 uppercase">
+          <p className="mt-6 px-1 text-[11px] font-medium tracking-wide text-slate-500 uppercase">
             Quick Actions
           </p>
-          <div className="mt-2 flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5">
-            <Search size={15} className="shrink-0 text-zinc-400" />
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5">
+            <Search size={15} className="shrink-0 text-slate-500" />
             <Autocomplete
               value={quickQuery}
               onChange={setQuickQuery}
               onSubmit={handleQuickSearch}
               suggestionType="query"
               placeholder="Search"
-              className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400"
+              className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
             />
           </div>
         </>
       )}
 
       {collapsed ? (
-        <div className="mt-6 border-t border-zinc-100" />
+        <div className="mt-6 border-t border-white/10" />
       ) : (
-        <p className="mt-6 px-1 text-[11px] font-medium tracking-wide text-zinc-400 uppercase">Menu</p>
+        <p className="mt-6 px-1 text-[11px] font-medium tracking-wide text-slate-500 uppercase">Menu</p>
       )}
       <nav className="mt-2 flex flex-col gap-0.5">{MENU.map(renderItem)}</nav>
 
       {(isAdmin || !collapsed) && SYSTEM_MENU.some((i) => !i.adminOnly || isAdmin) && (
         <>
           {collapsed ? (
-            <div className="mt-6 border-t border-zinc-100" />
+            <div className="mt-6 border-t border-white/10" />
           ) : (
-            <p className="mt-6 px-1 text-[11px] font-medium tracking-wide text-zinc-400 uppercase">System</p>
+            <p className="mt-6 px-1 text-[11px] font-medium tracking-wide text-slate-500 uppercase">System</p>
           )}
           <nav className="mt-2 flex flex-col gap-0.5">{SYSTEM_MENU.map(renderItem)}</nav>
         </>
@@ -182,17 +182,17 @@ export default function Sidebar({
 
       {session && (
         <div
-          className={`mt-6 rounded-lg border border-zinc-200 ${
+          className={`mt-6 rounded-lg border border-white/10 ${
             collapsed ? "flex flex-col items-center gap-2 p-2" : "flex items-center gap-2.5 p-2.5"
           }`}
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-semibold text-white shadow-sm shadow-indigo-200">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#d21b3c] to-[var(--brand-dark)] text-xs font-semibold text-white shadow-sm shadow-black/30">
             {session.username.slice(0, 1).toUpperCase()}
           </span>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-zinc-900">{session.username}</p>
-              <p className="truncate text-xs text-zinc-400">
+              <p className="truncate text-sm font-medium text-white">{session.username}</p>
+              <p className="truncate text-xs text-slate-400">
                 {session.role === "admin" ? "admin" : "user"}
               </p>
             </div>
@@ -200,7 +200,7 @@ export default function Sidebar({
           <button
             onClick={handleLogout}
             title="ออกจากระบบ"
-            className="shrink-0 rounded-md p-1.5 text-zinc-400 hover:bg-zinc-50 hover:text-red-600"
+            className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-white/5 hover:text-red-400"
           >
             <LogOut size={16} />
           </button>

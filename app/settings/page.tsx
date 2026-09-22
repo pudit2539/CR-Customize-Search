@@ -288,7 +288,7 @@ export default function SettingsPage() {
                           <button
                             onClick={() => saveRow(e.role, d.label, d.rate)}
                             disabled={savingRole === e.role}
-                            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-40"
+                            className="rounded-lg bg-[var(--brand)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--brand-dark)] disabled:opacity-40"
                           >
                             {savingRole === e.role ? "กำลังบันทึก..." : "บันทึก"}
                           </button>

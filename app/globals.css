@@ -9,9 +9,15 @@
   --radius-card: 1.1rem;
   --radius-control: 0.65rem;
   --shadow-card: 0 1px 2px 0 rgb(24 24 27 / 0.05), 0 4px 16px -4px rgb(24 24 27 / 0.07);
-  --shadow-card-hover: 0 2px 4px 0 rgb(24 24 27 / 0.06), 0 12px 28px -8px rgb(79 70 229 / 0.16);
-  --shadow-btn-primary: 0 2px 6px -1px rgb(79 70 229 / 0.35), 0 1px 2px rgb(79 70 229 / 0.2);
-  --brand-gradient: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+  --shadow-card-hover: 0 2px 4px 0 rgb(24 24 27 / 0.06), 0 12px 28px -8px rgb(200 16 46 / 0.18);
+  --shadow-btn-primary: 0 2px 6px -1px rgb(200 16 46 / 0.35), 0 1px 2px rgb(200 16 46 / 0.2);
+
+  /* PINNO brand red — matches the IPOP HR product's accent (also used as
+     BRAND_RED in lib import-template generation) so this app reads as part
+     of the same product family instead of its own one-off purple theme. */
+  --brand: #c8102e;
+  --brand-dark: #96091f;
+  --brand-gradient: linear-gradient(135deg, #d21b3c 0%, var(--brand-dark) 100%);
 }
 
 @theme inline {
@@ -66,8 +72,8 @@ body {
   }
   .control:focus {
     outline: none;
-    border-color: var(--color-indigo-400);
-    box-shadow: 0 0 0 3px rgb(99 102 241 / 0.15);
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgb(200 16 46 / 0.15);
   }
   .control::placeholder {
     color: var(--color-zinc-400);

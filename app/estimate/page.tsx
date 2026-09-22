@@ -255,7 +255,7 @@ export default function EstimatePage() {
             key={m}
             onClick={() => setMode(m)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              mode === m ? "bg-indigo-600 text-white" : "text-zinc-500 hover:text-zinc-900"
+              mode === m ? "bg-[var(--brand)] text-white" : "text-zinc-500 hover:text-zinc-900"
             }`}
           >
             {m === "all" ? "ทั้งหมด" : MODE_LABEL[m]}
@@ -277,7 +277,7 @@ export default function EstimatePage() {
           <button
             onClick={handleEstimate}
             disabled={loading || parsedCount === 0}
-            className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white disabled:opacity-40"
+            className="btn btn-primary"
           >
             {loading ? "กำลังประเมิน..." : `ประเมินทั้งชุด (${parsedCount} ข้อ)`}
           </button>
@@ -519,7 +519,7 @@ export default function EstimatePage() {
                   setRow(editingMdRow, { mdOverride: parsed });
                   setEditingMdRow(null);
                 }}
-                className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                className="rounded-lg bg-[var(--brand)] px-5 py-2 text-sm font-medium text-white hover:bg-[var(--brand-dark)]"
               >
                 บันทึก
               </button>
@@ -582,7 +582,7 @@ export default function EstimatePage() {
               <button
                 onClick={handleExportQuote}
                 disabled={exportingQuote}
-                className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-40"
+                className="flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-5 py-2 text-sm font-medium text-white hover:bg-[var(--brand-dark)] disabled:opacity-40"
               >
                 <FileSpreadsheet size={15} />
                 {exportingQuote ? "กำลังสร้าง..." : "ดาวน์โหลด Excel"}

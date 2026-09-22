@@ -289,7 +289,7 @@ export default function ItemsPage() {
                           <button
                             onClick={() => setDetailItem(item)}
                             title="ดูรายละเอียด"
-                            className="rounded-lg bg-indigo-600 p-2 text-white hover:bg-indigo-700"
+                            className="rounded-lg bg-[var(--brand)] p-2 text-white hover:bg-[var(--brand-dark)]"
                           >
                             <Eye size={14} />
                           </button>
