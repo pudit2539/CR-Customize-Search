@@ -121,7 +121,7 @@ export default function Home() {
   const visibleMatches = showAll ? matches : matches.slice(0, RESULTS_PAGE_SIZE);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-10">
+    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-10 xl:max-w-4xl 2xl:max-w-5xl">
       <div className="page-header">
         <span className="icon-badge h-11 w-11 shrink-0">
           <SearchIcon size={20} />
