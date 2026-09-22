@@ -54,6 +54,7 @@ export default function DashboardPage() {
   const [project, setProject] = useState("");
   const [clientSearch, setClientSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [filtering, setFiltering] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef = useRef<Chart | null>(null);
   const isAdmin = role === "admin";
@@ -69,6 +70,7 @@ export default function DashboardPage() {
   // state closed over by this render's `load`.
   function load(overrides?: { project?: string }) {
     setError(null);
+    setFiltering(true);
     const params = { ...filterParams, ...(overrides?.project && { project: overrides.project }) };
     fetch(`/api/dashboard?${new URLSearchParams(params).toString()}`)
       .then((r) => {
@@ -76,7 +78,8 @@ export default function DashboardPage() {
         return r.json();
       })
       .then(setData)
-      .catch((err) => setError(err instanceof Error ? err.message : "โหลดแดชบอร์ดไม่สำเร็จ"));
+      .catch((err) => setError(err instanceof Error ? err.message : "โหลดแดชบอร์ดไม่สำเร็จ"))
+      .finally(() => setFiltering(false));
   }
 
   useEffect(() => {
@@ -254,9 +257,13 @@ export default function DashboardPage() {
             placeholder="ชื่อโปรเจกต์/ลูกค้า..."
             className="control w-full sm:w-48"
           />
-          <button onClick={() => load()} className="btn btn-primary w-full sm:w-auto">
-            <SlidersHorizontal size={14} />
-            กรองข้อมูล
+          <button onClick={() => load()} disabled={filtering} className="btn btn-primary w-full sm:w-auto">
+            {filtering ? (
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            ) : (
+              <SlidersHorizontal size={14} />
+            )}
+            {filtering ? "กำลังกรอง..." : "กรองข้อมูล"}
           </button>
           <div className="flex flex-col gap-2 sm:ml-auto sm:flex-row">
             <a
@@ -278,6 +285,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      <div className={`transition-opacity duration-200 ${filtering ? "opacity-40" : "opacity-100"}`}>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {kpis.map((k) => (
           <div key={k.label} className={`rounded-2xl p-4 transition-transform hover:-translate-y-0.5 ${k.card}`}>
@@ -371,6 +379,7 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </div>
+      </div>
       </div>
     </div>
   );

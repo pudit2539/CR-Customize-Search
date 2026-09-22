@@ -6,7 +6,6 @@ import { CheckCircle2, Search as SearchIcon, Sparkles } from "lucide-react";
 import Autocomplete from "@/components/Autocomplete";
 import ItemDetailModal from "@/components/ItemDetailModal";
 import MdMatrix from "@/components/MdMatrix";
-import { tagColor } from "@/lib/colors";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
 import type { CrItemMatch } from "@/lib/types";
 
@@ -22,30 +21,19 @@ const EXAMPLE_QUERIES = [
   "Setup Role / Permission ตามบริษัท",
 ];
 
+// Kept neutral (no per-name rainbow color) so a case touching many clients
+// doesn't turn the result card into a wall of confetti — the project names
+// themselves are the information, not their color.
 function ProjectTags({ project }: { project: string | null }) {
-  if (!project) return <span className="text-zinc-400">-</span>;
+  if (!project) return null;
   const names = project.split(",").map((p) => p.trim()).filter(Boolean);
   return (
     <span className="flex flex-wrap gap-1">
       {names.map((name) => (
-        <span
-          key={name}
-          className={`rounded-full px-2 py-0.5 text-xs font-medium ${tagColor(name)}`}
-        >
+        <span key={name} className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
           {name}
         </span>
       ))}
-    </span>
-  );
-}
-
-function MdTags({ item }: { item: CrItemMatch }) {
-  return (
-    <span className="flex flex-wrap items-center gap-2">
-      <MdMatrix breakdown={item.md_breakdown} />
-      {item.md_summary != null && (
-        <span className="text-xs text-zinc-400">(รวม {item.md_summary} MD)</span>
-      )}
     </span>
   );
 }
@@ -252,51 +240,64 @@ export default function Home() {
       {matches.length > 0 && (
         <div className="mt-6 space-y-4">
           {visibleMatches.map((m) => (
-            <div key={m.id} className="rounded-xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60 transition-shadow hover:shadow-md hover:shadow-zinc-200">
+            <div key={m.id} className="surface-card surface-card-hover p-4">
               <div className="flex items-start justify-between gap-4">
-                <div>
-                  <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+                <div className="flex items-center gap-2 text-xs text-zinc-500">
+                  <span className="rounded bg-zinc-100 px-2 py-0.5 font-medium text-zinc-600">
                     {m.module ?? "-"}
                   </span>
-                  <span className="ml-2 text-xs text-zinc-500">
+                  <span>
                     {MODE_LABEL[m.source_type]} · No.{m.item_no ?? "-"}
                   </span>
                 </div>
-                <span className="whitespace-nowrap rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                <span className="whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-100">
                   ใกล้เคียง {(m.similarity * 100).toFixed(0)}%
                 </span>
               </div>
-              <p className="mt-2 text-sm whitespace-pre-wrap text-zinc-800">{m.detail}</p>
-              <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-zinc-600 sm:grid-cols-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-medium text-zinc-500">MD:</span> <MdTags item={m} />
-                </div>
-                <div>
-                  <span className="font-medium text-zinc-500">Cost:</span>{" "}
+
+              <p className="mt-2.5 text-sm leading-6 font-medium whitespace-pre-wrap text-zinc-900">{m.detail}</p>
+
+              {/* One relaxed meta line instead of a label/value grid — MD,
+                  cost, and industry read as a single glance, not four boxes. */}
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
+                <span className="flex items-center gap-1.5">
+                  <MdMatrix breakdown={m.md_breakdown} />
+                  {m.md_summary != null && <span>รวม {m.md_summary} MD</span>}
+                </span>
+                <span className="flex items-center gap-1">
+                  Cost:
                   {m.cost != null ? (
-                    m.cost.toLocaleString()
+                    <span className="font-medium text-zinc-700">{m.cost.toLocaleString()}</span>
                   ) : (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-100">
                       ไม่มีราคา STD
                     </span>
                   )}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-medium text-zinc-500">Project:</span> <ProjectTags project={m.project} />
-                </div>
-                <div>
-                  <span className="font-medium text-zinc-500">Industry:</span> {m.industry ?? "-"}
-                </div>
+                </span>
+                {m.industry && (
+                  <span>
+                    Industry: <span className="text-zinc-700">{m.industry}</span>
+                  </span>
+                )}
               </div>
+
+              {m.project && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="text-zinc-400">Project:</span>
+                  <ProjectTags project={m.project} />
+                </div>
+              )}
+
               {m.remark && (
-                <p className="mt-2 rounded bg-zinc-50 p-2 text-xs whitespace-pre-wrap text-zinc-600">
+                <p className="mt-2.5 rounded-lg bg-zinc-50 p-2.5 text-xs whitespace-pre-wrap text-zinc-600">
                   {m.remark}
                 </p>
               )}
-              <div className="mt-2 flex items-center gap-3">
+
+              <div className="mt-3 flex items-center gap-4 border-t border-zinc-50 pt-2.5">
                 <button
                   onClick={() => setDetailItem(m)}
-                  className="text-xs text-zinc-600 hover:underline"
+                  className="text-xs font-medium text-zinc-600 hover:text-indigo-700 hover:underline"
                 >
                   ดูรายละเอียด
                 </button>
