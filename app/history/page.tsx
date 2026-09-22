@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Eye, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, History as HistoryIcon, RotateCcw } from "lucide-react";
 import ItemDetailModal from "@/components/ItemDetailModal";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
 import type { CrItemRow } from "@/lib/types";
@@ -115,7 +115,15 @@ export default function HistoryPage() {
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">
-      <h1 className="text-xl font-semibold text-zinc-900 sm:text-2xl">ประวัติการใช้งาน</h1>
+      <div className="page-header">
+        <span className="icon-badge h-11 w-11 shrink-0">
+          <HistoryIcon size={20} />
+        </span>
+        <div>
+          <h1>ประวัติการใช้งาน</h1>
+          <p>ประวัติการค้นหาและการแก้ไขข้อมูลทั้งหมดในระบบ</p>
+        </div>
+      </div>
 
       <div className="mt-4 inline-flex rounded-full border border-zinc-200 bg-white p-1">
         {(["search", "changes"] as const).map((t) => (

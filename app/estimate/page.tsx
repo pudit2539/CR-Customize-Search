@@ -236,14 +236,18 @@ export default function EstimatePage() {
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">
-      <h1 className="flex items-center gap-2 text-xl font-semibold text-zinc-900 sm:text-2xl">
-        <Calculator size={22} />
-        Create Quotation
-      </h1>
-      <p className="mt-1 text-zinc-600">
-        วาง requirement หลายข้อพร้อมกัน (1 บรรทัด = 1 ข้อ) ระบบจะค้นหาเคสอ้างอิงให้ทีละข้อ
-        แล้วสรุปเป็นตาราง MD/Cost รวม
-      </p>
+      <div className="page-header">
+        <span className="icon-badge h-11 w-11 shrink-0">
+          <Calculator size={20} />
+        </span>
+        <div>
+          <h1>Create Quotation</h1>
+          <p>
+            วาง requirement หลายข้อพร้อมกัน (1 บรรทัด = 1 ข้อ) ระบบจะค้นหาเคสอ้างอิงให้ทีละข้อ
+            แล้วสรุปเป็นตาราง MD/Cost รวม
+          </p>
+        </div>
+      </div>
 
       <div className="mt-6 inline-flex rounded-full border border-zinc-200 bg-white p-1">
         {(["all", "new_customer", "existing_customer"] as const).map((m) => (

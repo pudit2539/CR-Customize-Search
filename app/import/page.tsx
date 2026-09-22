@@ -280,7 +280,12 @@ export default function ImportPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-10">
-      <h1 className="text-xl font-semibold sm:text-2xl">นำเข้าข้อมูล</h1>
+      <div className="page-header">
+        <span className="icon-badge h-11 w-11 shrink-0">
+          <Upload size={20} />
+        </span>
+        <h1>นำเข้าข้อมูล</h1>
+      </div>
 
       <div className="mt-4 flex gap-2">
         <button

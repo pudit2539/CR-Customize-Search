@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Search as SearchIcon, Sparkles } from "lucide-react";
 import Autocomplete from "@/components/Autocomplete";
 import ItemDetailModal from "@/components/ItemDetailModal";
 import MdMatrix from "@/components/MdMatrix";
@@ -133,22 +133,31 @@ export default function Home() {
   const visibleMatches = showAll ? matches : matches.slice(0, RESULTS_PAGE_SIZE);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-8">
-      <h1 className="text-xl font-semibold text-zinc-900 sm:text-2xl">ค้นหา CR/Customize ที่เคยทำแล้ว</h1>
-      <p className="mt-1 text-zinc-600">
-        พิมพ์ requirement ที่ได้รับมา ระบบจะค้นหาเคสเก่าที่ใกล้เคียงที่สุดให้
-        {totalItems != null && (
-          <span className="text-zinc-400"> · ค้นหาจากคลังข้อมูล {totalItems.toLocaleString()} รายการที่เคยทำแล้ว</span>
-        )}
-      </p>
+    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-10">
+      <div className="page-header">
+        <span className="icon-badge h-11 w-11 shrink-0">
+          <SearchIcon size={20} />
+        </span>
+        <div>
+          <h1>ค้นหา CR/Customize ที่เคยทำแล้ว</h1>
+          <p>
+            พิมพ์ requirement ที่ได้รับมา ระบบจะค้นหาเคสเก่าที่ใกล้เคียงที่สุดให้
+            {totalItems != null && (
+              <span className="text-zinc-400"> · ค้นหาจากคลังข้อมูล {totalItems.toLocaleString()} รายการที่เคยทำแล้ว</span>
+            )}
+          </p>
+        </div>
+      </div>
 
-      <div className="mt-6 inline-flex rounded-full border border-zinc-200 bg-white p-1">
+      <div className="mt-7 inline-flex rounded-full border border-zinc-200 bg-white p-1 shadow-sm shadow-zinc-200/50">
         {(["all", "new_customer", "existing_customer"] as const).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              mode === m ? "bg-indigo-600 text-white" : "text-zinc-500 hover:text-zinc-900"
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+              mode === m
+                ? "bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-sm shadow-indigo-300/50"
+                : "text-zinc-500 hover:text-zinc-900"
             }`}
           >
             {m === "all" ? "ทั้งหมด" : MODE_LABEL[m]}
@@ -156,7 +165,7 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 surface-card p-2">
         <Autocomplete
           multiline
           rows={5}
@@ -165,20 +174,22 @@ export default function Home() {
           onSubmit={(q) => handleSearch(q)}
           suggestionType="query"
           placeholder="เช่น: ลูกค้าอยากให้ระบบคำนวณ overtime แยกตามกะการทำงาน... (กด Enter เพื่อค้นหา, Shift+Enter ขึ้นบรรทัดใหม่)"
-          className="w-full resize-none rounded-xl border border-zinc-200 bg-white p-4 text-sm shadow-sm shadow-zinc-200/60 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          className="w-full resize-none rounded-[0.7rem] border-0 bg-transparent p-3 text-sm outline-none focus:ring-0"
         />
-        <button
-          onClick={() => handleSearch()}
-          disabled={loading || !query.trim()}
-          className="mt-3 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white disabled:opacity-40"
-        >
-          {loading ? "กำลังค้นหา..." : "ค้นหา"}
-        </button>
+        <div className="flex justify-end border-t border-zinc-50 p-2 pt-3">
+          <button onClick={() => handleSearch()} disabled={loading || !query.trim()} className="btn btn-primary">
+            <SearchIcon size={14} />
+            {loading ? "กำลังค้นหา..." : "ค้นหา"}
+          </button>
+        </div>
       </div>
 
       {!loading && matches.length === 0 && !synthesis && (
-        <div className="mt-4">
-          <p className="text-xs font-medium text-zinc-400">ตัวอย่างที่ลองค้นหาได้:</p>
+        <div className="mt-5">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
+            <Sparkles size={13} className="text-indigo-400" />
+            ตัวอย่างที่ลองค้นหาได้
+          </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {EXAMPLE_QUERIES.map((eq) => (
               <button
@@ -187,7 +198,7 @@ export default function Home() {
                   setQuery(eq);
                   handleSearch(eq);
                 }}
-                className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-600 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-600 shadow-sm shadow-zinc-200/40 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-md hover:shadow-indigo-100"
               >
                 {eq}
               </button>

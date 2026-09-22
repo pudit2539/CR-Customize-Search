@@ -73,15 +73,19 @@ export default function StdCandidatesPage() {
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">
-      <h1 className="flex items-center gap-2 text-xl font-semibold text-zinc-900 sm:text-2xl">
-        <Star size={22} className="fill-amber-500 text-amber-500" />
-        รายการเสนอ STD Candidate
-      </h1>
-      <p className="mt-1 text-zinc-600">
-        รวมรายการที่คัดไว้เพื่อคุยกับ <strong>พี่ยอด (Product/UI)</strong> และ{" "}
-        <strong>พี่แชมป์ (Dev)</strong> ว่าควรตีเป็นฟีเจอร์มาตรฐาน (STD) หรือไม่ —
-        เพิ่มรายการได้จากปุ่ม &quot;เสนอเป็น STD candidate&quot; ในหน้ารายละเอียดของแต่ละรายการ
-      </p>
+      <div className="page-header">
+        <span className="icon-badge h-11 w-11 shrink-0 bg-gradient-to-br from-amber-400 to-orange-500 shadow-[0_2px_6px_-1px_rgba(217,119,6,0.4)]">
+          <Star size={20} className="fill-white" />
+        </span>
+        <div>
+          <h1>รายการเสนอ STD Candidate</h1>
+          <p>
+            รวมรายการที่คัดไว้เพื่อคุยกับ <strong>พี่ยอด (Product/UI)</strong> และ{" "}
+            <strong>พี่แชมป์ (Dev)</strong> ว่าควรตีเป็นฟีเจอร์มาตรฐาน (STD) หรือไม่ —
+            เพิ่มรายการได้จากปุ่ม &quot;เสนอเป็น STD candidate&quot; ในหน้ารายละเอียดของแต่ละรายการ
+          </p>
+        </div>
+      </div>
       <p className="mt-1 text-xs text-zinc-400">
         เกณฑ์คร่าวๆ: ต้องคิดเผื่อว่าลูกค้าเจ้าอื่นจะได้ใช้ด้วย เพราะเป็น platform กลาง
         เปลี่ยนแล้วกระทบทุกคน — ควรเป็นการปรับที่จำเป็นจริงๆ ไม่ใช่ custom เฉพาะเจ้าเดียว

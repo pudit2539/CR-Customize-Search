@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Download, Eye, Pencil, Plus, Search, SlidersHorizontal } from "lucide-react";
+import { Download, Eye, List, Pencil, Plus, Search, SlidersHorizontal } from "lucide-react";
 import Autocomplete from "@/components/Autocomplete";
 import ItemDetailModal from "@/components/ItemDetailModal";
 import ItemFormModal from "@/components/ItemFormModal";
@@ -117,7 +117,15 @@ export default function ItemsPage() {
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-semibold text-zinc-900 sm:text-2xl">รายการ CR/Customize ทั้งหมด</h1>
+        <div className="page-header">
+          <span className="icon-badge h-11 w-11 shrink-0">
+            <List size={20} />
+          </span>
+          <div>
+            <h1>รายการ CR/Customize ทั้งหมด</h1>
+            <p>ดูและจัดการรายการ CR/Customize ทั้งหมดที่เคยทำ</p>
+          </div>
+        </div>
         {isAdmin && (
           <div className="flex gap-2">
             <a

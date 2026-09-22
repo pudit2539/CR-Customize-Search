@@ -12,7 +12,7 @@ import {
   type ChartEvent,
   type ActiveElement,
 } from "chart.js";
-import { Building2, Download, List, Search, SlidersHorizontal, Users } from "lucide-react";
+import { Building2, Download, LayoutDashboard, List, Search, SlidersHorizontal, Users } from "lucide-react";
 import Autocomplete from "@/components/Autocomplete";
 import { allCategories } from "@/lib/moduleCategories";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
@@ -215,7 +215,15 @@ export default function DashboardPage() {
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">
-      <h1 className="text-xl font-semibold text-zinc-900 sm:text-2xl">แดชบอร์ด</h1>
+      <div className="page-header">
+        <span className="icon-badge h-11 w-11 shrink-0">
+          <LayoutDashboard size={20} />
+        </span>
+        <div>
+          <h1>แดชบอร์ด</h1>
+          <p>ภาพรวมรายการ CR/Customize ทั้งหมด แยกตามประเภท หมวด และลูกค้า</p>
+        </div>
+      </div>
 
       {error && (
         <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</div>

@@ -107,13 +107,15 @@ export default function InsightsPage() {
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">
-      <h1 className="flex items-center gap-2 text-xl font-semibold text-zinc-900 sm:text-2xl">
-        <Lightbulb size={22} />
-        Insights
-      </h1>
-      <p className="mt-1 text-zinc-600">
-        วิเคราะห์จากประวัติการค้นหา — requirement ไหนถูกถามบ่อย และคลังข้อมูลยังมีช่องว่างตรงไหน
-      </p>
+      <div className="page-header">
+        <span className="icon-badge h-11 w-11 shrink-0">
+          <Lightbulb size={20} />
+        </span>
+        <div>
+          <h1>Insights</h1>
+          <p>วิเคราะห์จากประวัติการค้นหา — requirement ไหนถูกถามบ่อย และคลังข้อมูลยังมีช่องว่างตรงไหน</p>
+        </div>
+      </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {kpis.map((k) => (

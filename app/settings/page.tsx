@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { History, Lock, Plus, Trash2, Upload } from "lucide-react";
+import { History, Lock, Plus, Settings as SettingsIcon, Trash2, Upload } from "lucide-react";
 import { CORE_ROLES, type RateEntry } from "@/lib/mdRates";
 
 // Groups rate rows by the same Functional/Dev/Manager split used for the MD
@@ -171,11 +171,18 @@ export default function SettingsPage() {
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">
-      <h1 className="text-xl font-semibold text-zinc-900 sm:text-2xl">ตั้งค่าอัตรา MD (Master Data)</h1>
-      <p className="mt-1 text-zinc-600">
-        อัตราต้นทุน (บาท/MD) ต่อระดับ — ใช้คำนวณ cost แนะนำและ breakdown ในหน้ารายละเอียด
-        ไม่มีผลกับ cost ของรายการเก่าที่บันทึกไว้แล้ว
-      </p>
+      <div className="page-header">
+        <span className="icon-badge h-11 w-11 shrink-0">
+          <SettingsIcon size={20} />
+        </span>
+        <div>
+          <h1>ตั้งค่าอัตรา MD (Master Data)</h1>
+          <p>
+            อัตราต้นทุน (บาท/MD) ต่อระดับ — ใช้คำนวณ cost แนะนำและ breakdown ในหน้ารายละเอียด
+            ไม่มีผลกับ cost ของรายการเก่าที่บันทึกไว้แล้ว
+          </p>
+        </div>
+      </div>
 
       <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm">
         <p className="font-medium text-zinc-800">เกณฑ์คร่าวๆ ในการเลือกระดับ (level) ก่อนกรอก MD</p>
