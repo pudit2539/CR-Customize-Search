@@ -13,6 +13,7 @@ import {
   type ActiveElement,
 } from "chart.js";
 import { Building2, Download, LayoutDashboard, List, Search, SlidersHorizontal, Users } from "lucide-react";
+import AnimatedNumber from "@/components/AnimatedNumber";
 import Autocomplete from "@/components/Autocomplete";
 import { allCategories } from "@/lib/moduleCategories";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
@@ -160,19 +161,19 @@ export default function DashboardPage() {
 
   if (!data) {
     return (
-      <div className="animate-pulse px-4 py-6 sm:px-8 sm:py-8">
-        <div className="h-7 w-40 rounded bg-zinc-200" />
-        <div className="mt-6 h-16 rounded-2xl border border-zinc-100 bg-white shadow-sm shadow-zinc-200/60" />
+      <div className="px-4 py-6 sm:px-8 sm:py-8">
+        <div className="skeleton h-7 w-40 rounded" />
+        <div className="skeleton mt-6 h-16 rounded-2xl" />
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
-              <div className="h-9 w-9 rounded-lg bg-zinc-100" />
-              <div className="mt-3 h-3 w-20 rounded bg-zinc-100" />
-              <div className="mt-2 h-6 w-14 rounded bg-zinc-200" />
+              <div className="skeleton h-9 w-9 rounded-lg" />
+              <div className="skeleton mt-3 h-3 w-20 rounded" />
+              <div className="skeleton mt-2 h-6 w-14 rounded" />
             </div>
           ))}
         </div>
-        <div className="mt-4 h-72 rounded-2xl border border-zinc-100 bg-white shadow-sm shadow-zinc-200/60" />
+        <div className="skeleton mt-4 h-72 rounded-2xl" />
       </div>
     );
   }
@@ -293,7 +294,9 @@ export default function DashboardPage() {
               <k.icon size={17} />
             </span>
             <p className={`mt-3 text-xs ${k.labelTint}`}>{k.label}</p>
-            <p className="mt-1 text-2xl font-semibold">{k.value}</p>
+            <p className="mt-1 text-2xl font-semibold">
+              <AnimatedNumber value={k.value} />
+            </p>
           </div>
         ))}
       </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import Modal from "./Modal";
 import ItemForm, { emptyItemFormValues, toApiPayload, type ItemFormValues } from "./ItemForm";
+import { useToast } from "./ToastProvider";
 import type { CrItemMatch } from "@/lib/types";
 
 interface ItemFormModalProps {
@@ -19,6 +20,7 @@ export default function ItemFormModal({ onClose, onSaved }: ItemFormModalProps) 
     duplicates: CrItemMatch[];
   } | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const showToast = useToast();
 
   async function save(values: ItemFormValues) {
     const res = await fetch("/api/items", {
@@ -28,6 +30,7 @@ export default function ItemFormModal({ onClose, onSaved }: ItemFormModalProps) 
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "บันทึกไม่สำเร็จ");
+    showToast("เพิ่มรายการแล้ว");
     onSaved();
   }
 

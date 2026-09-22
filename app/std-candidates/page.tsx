@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, Eye, Star, Trash2 } from "lucide-react";
 import ItemDetailModal from "@/components/ItemDetailModal";
+import { useToast } from "@/components/ToastProvider";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
 import { allCategories, categoryOf } from "@/lib/moduleCategories";
 import type { CrItemRow } from "@/lib/types";
@@ -27,6 +28,7 @@ export default function StdCandidatesPage() {
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [detailItem, setDetailItem] = useState<CrItemRow | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const showToast = useToast();
 
   function load() {
     setLoading(true);
@@ -65,6 +67,7 @@ export default function StdCandidatesPage() {
     setRemovingId(itemId);
     try {
       await fetch(`/api/std-candidates?item_id=${itemId}`, { method: "DELETE" });
+      showToast("เอาออกจากรายการแล้ว");
       load();
     } finally {
       setRemovingId(null);
@@ -104,9 +107,9 @@ export default function StdCandidatesPage() {
       )}
 
       {loading ? (
-        <div className="mt-4 animate-pulse space-y-2">
+        <div className="mt-4 space-y-2">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-20 rounded-2xl border border-zinc-100 bg-white shadow-sm shadow-zinc-200/60" />
+            <div key={i} className="skeleton h-20 rounded-2xl" />
           ))}
         </div>
       ) : candidates.length === 0 ? (

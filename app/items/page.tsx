@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Download, Eye, List, Pencil, Plus, Search, SlidersHorizontal } from "lucide-react";
+import AnimatedNumber from "@/components/AnimatedNumber";
 import Autocomplete from "@/components/Autocomplete";
 import ItemDetailModal from "@/components/ItemDetailModal";
 import ItemFormModal from "@/components/ItemFormModal";
@@ -150,7 +151,10 @@ export default function ItemsPage() {
       <div className="mt-6 surface-card">
         <div className="flex flex-col gap-2 border-b border-zinc-100 p-4 sm:flex-row sm:flex-wrap sm:items-center">
           <span className="mr-1 text-sm font-semibold text-zinc-900">
-            รายการ <span className="font-normal text-zinc-400">ทั้งหมด {visibleItems.length}</span>
+            รายการ{" "}
+            <span className="font-normal text-zinc-400">
+              ทั้งหมด <AnimatedNumber value={visibleItems.length} />
+            </span>
           </span>
           <div className="relative w-full sm:w-56">
             <Search size={15} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 z-10 text-zinc-400" />
@@ -205,15 +209,15 @@ export default function ItemsPage() {
         )}
 
         {loading ? (
-          <div className="animate-pulse p-4">
+          <div className="p-4">
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="flex items-center gap-3 border-t border-zinc-100 py-3 first:border-t-0">
-                <div className="h-9 w-9 shrink-0 rounded-lg bg-zinc-100" />
+                <div className="skeleton h-9 w-9 shrink-0 rounded-lg" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3 w-2/3 rounded bg-zinc-200" />
-                  <div className="h-3 w-1/4 rounded bg-zinc-100" />
+                  <div className="skeleton h-3 w-2/3 rounded" />
+                  <div className="skeleton h-3 w-1/4 rounded" />
                 </div>
-                <div className="h-5 w-16 rounded-full bg-zinc-100" />
+                <div className="skeleton h-5 w-16 rounded-full" />
               </div>
             ))}
           </div>

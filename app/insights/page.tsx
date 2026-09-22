@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Activity, AlertCircle, Lightbulb, RotateCcw, Search, TrendingUp } from "lucide-react";
+import AnimatedNumber from "@/components/AnimatedNumber";
 
 interface TopQuery {
   query: string;
@@ -61,20 +62,20 @@ export default function InsightsPage() {
 
   if (!data) {
     return (
-      <div className="animate-pulse px-4 py-6 sm:px-8 sm:py-8">
-        <div className="h-7 w-40 rounded bg-zinc-200" />
+      <div className="px-4 py-6 sm:px-8 sm:py-8">
+        <div className="skeleton h-7 w-40 rounded" />
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
-              <div className="h-9 w-9 rounded-lg bg-zinc-100" />
-              <div className="mt-3 h-3 w-20 rounded bg-zinc-100" />
-              <div className="mt-2 h-6 w-14 rounded bg-zinc-200" />
+              <div className="skeleton h-9 w-9 rounded-lg" />
+              <div className="skeleton mt-3 h-3 w-20 rounded" />
+              <div className="skeleton mt-2 h-6 w-14 rounded" />
             </div>
           ))}
         </div>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          <div className="h-72 rounded-2xl border border-zinc-100 bg-white shadow-sm shadow-zinc-200/60" />
-          <div className="h-72 rounded-2xl border border-zinc-100 bg-white shadow-sm shadow-zinc-200/60" />
+          <div className="skeleton h-72 rounded-2xl" />
+          <div className="skeleton h-72 rounded-2xl" />
         </div>
       </div>
     );
@@ -83,7 +84,13 @@ export default function InsightsPage() {
   const maxPerDay = Math.max(...data.perDay.map((d) => d.count), 1);
   const maxModule = Math.max(...data.topModules.map((m) => m.count), 1);
 
-  const kpis = [
+  const kpis: {
+    label: string;
+    value: number | null;
+    suffix?: string;
+    icon: typeof Search;
+    tint: string;
+  }[] = [
     { label: "ค้นหาสะสม", value: data.totalSearches, icon: Search, tint: "bg-zinc-100 text-zinc-700" },
     {
       label: "ค้นหา 7 วันล่าสุด",
@@ -93,7 +100,8 @@ export default function InsightsPage() {
     },
     {
       label: "ความใกล้เคียงเฉลี่ย",
-      value: data.avgTopSimilarity != null ? `${(data.avgTopSimilarity * 100).toFixed(0)}%` : "-",
+      value: data.avgTopSimilarity != null ? Math.round(data.avgTopSimilarity * 100) : null,
+      suffix: "%",
       icon: TrendingUp,
       tint: "bg-emerald-50 text-emerald-700",
     },
@@ -124,7 +132,16 @@ export default function InsightsPage() {
               <k.icon size={17} />
             </span>
             <p className="mt-3 text-xs text-zinc-500">{k.label}</p>
-            <p className="mt-1 text-2xl font-semibold text-zinc-900">{k.value}</p>
+            <p className="mt-1 text-2xl font-semibold text-zinc-900">
+              {k.value == null ? (
+                "-"
+              ) : (
+                <>
+                  <AnimatedNumber value={k.value} />
+                  {k.suffix ?? ""}
+                </>
+              )}
+            </p>
           </div>
         ))}
       </div>

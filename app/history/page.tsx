@@ -50,12 +50,12 @@ function SkeletonCards() {
   return (
     <div className="mt-6 space-y-3">
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="animate-pulse rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
+        <div key={i} className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
           <div className="flex items-start justify-between gap-4">
-            <div className="h-3.5 w-2/3 rounded bg-zinc-200" />
-            <div className="h-3 w-20 rounded bg-zinc-100" />
+            <div className="skeleton h-3.5 w-2/3 rounded" />
+            <div className="skeleton h-3 w-20 rounded" />
           </div>
-          <div className="mt-3 h-3 w-1/3 rounded bg-zinc-100" />
+          <div className="skeleton mt-3 h-3 w-1/3 rounded" />
         </div>
       ))}
     </div>

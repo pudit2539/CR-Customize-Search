@@ -330,9 +330,9 @@ export default function EstimatePage() {
             กำลังค้นหาเคสอ้างอิงทีละข้อ...
           </div>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="animate-pulse rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
-              <div className="h-3 w-3/4 rounded bg-zinc-200" />
-              <div className="mt-3 h-3 w-1/2 rounded bg-zinc-100" />
+            <div key={i} className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
+              <div className="skeleton h-3 w-3/4 rounded" />
+              <div className="skeleton mt-3 h-3 w-1/2 rounded" />
             </div>
           ))}
         </div>

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, Search as SearchIcon, Sparkles } from "lucide-react";
+import { CheckCircle2, Columns3, Search as SearchIcon, Sparkles, X } from "lucide-react";
 import Autocomplete from "@/components/Autocomplete";
+import CompareModal from "@/components/CompareModal";
+import HighlightText from "@/components/HighlightText";
 import ItemDetailModal from "@/components/ItemDetailModal";
 import MdMatrix from "@/components/MdMatrix";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
@@ -12,6 +14,7 @@ import type { CrItemMatch } from "@/lib/types";
 const MODE_LABEL = SOURCE_TYPE_LABEL;
 
 const RESULTS_PAGE_SIZE = 5;
+const MAX_COMPARE = 3;
 
 const EXAMPLE_QUERIES = [
   "Overtime แยกตามกะการทำงาน",
@@ -55,6 +58,12 @@ export default function Home() {
   const [detailItem, setDetailItem] = useState<CrItemMatch | null>(null);
   const [totalItems, setTotalItems] = useState<number | null>(null);
   const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
+  // The query actually behind the matches on screen — kept separate from
+  // `query` (the live textarea value) so editing the box after a search
+  // doesn't retroactively change what gets highlighted in the old results.
+  const [lastQuery, setLastQuery] = useState("");
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
 
   // "This match is correct" feedback — see /api/match-feedback and
   // lib/rerank.ts. The practical stand-in for "learn from usage" (feedback
@@ -73,6 +82,14 @@ export default function Home() {
     }
   }
 
+  function toggleCompare(id: string) {
+    setCompareIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= MAX_COMPARE) return prev;
+      return [...prev, id];
+    });
+  }
+
   useEffect(() => {
     fetch("/api/dashboard")
       .then((r) => r.json())
@@ -89,6 +106,8 @@ export default function Home() {
     setMatches([]);
     setSynthesis(null);
     setSynthesisLoading(false);
+    setLastQuery(effectiveQuery);
+    setCompareIds([]);
     try {
       // Phase 1: vector matches — fast, renders immediately. Phase 2: the AI
       // summary takes 10s+, so it streams in afterwards instead of blocking.
@@ -205,13 +224,13 @@ export default function Home() {
             กำลังค้นหาและวิเคราะห์เคสที่ใกล้เคียง...
           </div>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="animate-pulse rounded-xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
-              <div className="h-3 w-28 rounded bg-zinc-200" />
-              <div className="mt-3 h-3 w-full rounded bg-zinc-200" />
-              <div className="mt-2 h-3 w-2/3 rounded bg-zinc-200" />
+            <div key={i} className="rounded-xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
+              <div className="skeleton h-3 w-28 rounded" />
+              <div className="skeleton mt-3 h-3 w-full rounded" />
+              <div className="skeleton mt-2 h-3 w-2/3 rounded" />
               <div className="mt-4 flex gap-2">
-                <div className="h-5 w-20 rounded-full bg-zinc-200" />
-                <div className="h-5 w-16 rounded-full bg-zinc-200" />
+                <div className="skeleton h-5 w-20 rounded-full" />
+                <div className="skeleton h-5 w-16 rounded-full" />
               </div>
             </div>
           ))}
@@ -256,7 +275,9 @@ export default function Home() {
                 </span>
               </div>
 
-              <p className="mt-2.5 text-sm leading-6 font-medium whitespace-pre-wrap text-zinc-900">{m.detail}</p>
+              <p className="mt-2.5 text-sm leading-6 font-medium whitespace-pre-wrap text-zinc-900">
+                <HighlightText text={m.detail} query={lastQuery} />
+              </p>
 
               {/* One relaxed meta line instead of a label/value grid — MD,
                   cost, and industry read as a single glance, not four boxes. */}
@@ -295,12 +316,27 @@ export default function Home() {
                 </p>
               )}
 
-              <div className="mt-3 flex items-center gap-4 border-t border-zinc-50 pt-2.5">
+              <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-zinc-50 pt-2.5">
                 <button
                   onClick={() => setDetailItem(m)}
                   className="text-xs font-medium text-zinc-600 hover:text-red-700 hover:underline"
                 >
                   ดูรายละเอียด
+                </button>
+                <button
+                  onClick={() => toggleCompare(m.id)}
+                  disabled={!compareIds.includes(m.id) && compareIds.length >= MAX_COMPARE}
+                  title={
+                    !compareIds.includes(m.id) && compareIds.length >= MAX_COMPARE
+                      ? `เปรียบเทียบได้สูงสุด ${MAX_COMPARE} เคส`
+                      : undefined
+                  }
+                  className={`flex items-center gap-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40 ${
+                    compareIds.includes(m.id) ? "text-red-700" : "text-zinc-500 hover:text-red-700"
+                  }`}
+                >
+                  <Columns3 size={13} />
+                  {compareIds.includes(m.id) ? "เพิ่มในการเปรียบเทียบแล้ว" : "เปรียบเทียบ"}
                 </button>
                 {confirmedIds.has(m.id) ? (
                   <span className="flex items-center gap-1 text-xs text-emerald-600">
@@ -330,6 +366,37 @@ export default function Home() {
             </button>
           )}
         </div>
+      )}
+
+      {compareIds.length >= 2 && !showCompare && (
+        <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 sm:inset-x-auto sm:right-4 sm:justify-end">
+          <div className="flex items-center gap-3 rounded-full border border-zinc-100 bg-white py-2 pr-2 pl-4 shadow-lg shadow-zinc-300/40">
+            <span className="text-xs font-medium text-zinc-600">เลือกไว้ {compareIds.length} เคส</span>
+            <button onClick={() => setShowCompare(true)} className="btn btn-primary py-1.5">
+              <Columns3 size={13} />
+              เปรียบเทียบ
+            </button>
+            <button
+              onClick={() => setCompareIds([])}
+              title="ล้างรายการเปรียบเทียบ"
+              className="rounded-full p-1.5 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showCompare && (
+        <CompareModal
+          items={matches.filter((m) => compareIds.includes(m.id))}
+          onClose={() => setShowCompare(false)}
+          onRemove={(id) => {
+            const next = compareIds.filter((x) => x !== id);
+            setCompareIds(next);
+            if (next.length === 0) setShowCompare(false);
+          }}
+        />
       )}
 
       {detailItem && <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} />}

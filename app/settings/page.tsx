@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { History, Lock, Plus, Settings as SettingsIcon, Trash2, Upload } from "lucide-react";
+import { useToast } from "@/components/ToastProvider";
 import { CORE_ROLES, type RateEntry } from "@/lib/mdRates";
 
 // Groups rate rows by the same Functional/Dev/Manager split used for the MD
@@ -54,8 +55,8 @@ export default function SettingsPage() {
   const [entries, setEntries] = useState<RateEntry[]>([]);
   const [history, setHistory] = useState<RateChange[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const showToast = useToast();
   // Row edits are buffered locally per role until that row's save is clicked.
   const [drafts, setDrafts] = useState<Record<string, { label: string; rate: string }>>({});
   const [savingRole, setSavingRole] = useState<string | null>(null);
@@ -109,7 +110,6 @@ export default function SettingsPage() {
 
   async function saveRow(role: string, label: string, rate: string) {
     setSavingRole(role);
-    setMessage(null);
     try {
       const res = await fetch("/api/settings/rates", {
         method: "PUT",
@@ -123,7 +123,7 @@ export default function SettingsPage() {
           delete rest[role];
           return rest;
         });
-        setMessage("บันทึกแล้ว");
+        showToast("บันทึกแล้ว");
         setShowAdd(false);
         setNewRow({ role: "", label: "", rate: "" });
       }
@@ -134,13 +134,12 @@ export default function SettingsPage() {
 
   async function deleteRow(role: string) {
     setSavingRole(role);
-    setMessage(null);
     try {
       const res = await fetch(`/api/settings/rates?role=${encodeURIComponent(role)}`, {
         method: "DELETE",
       });
       const json = await res.json();
-      if (applyResponse(json)) setMessage(`ลบ ${role} แล้ว`);
+      if (applyResponse(json)) showToast(`ลบ ${role} แล้ว`);
     } finally {
       setSavingRole(null);
       setConfirmDeleteRole(null);
@@ -149,7 +148,6 @@ export default function SettingsPage() {
 
   async function handleImport(file: File) {
     setImporting(true);
-    setMessage(null);
     setImportSummary(null);
     try {
       const form = new FormData();
@@ -209,12 +207,11 @@ export default function SettingsPage() {
       </div>
 
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-      {message && <p className="mt-4 text-sm text-emerald-600">{message}</p>}
 
       {loading ? (
-        <div className="mt-6 animate-pulse space-y-2">
+        <div className="mt-6 space-y-2">
           {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-12 rounded-xl border border-zinc-200 bg-white" />
+            <div key={i} className="skeleton h-12 rounded-xl" />
           ))}
         </div>
       ) : (

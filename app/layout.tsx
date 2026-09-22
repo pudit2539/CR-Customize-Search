@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import AppShell from "@/components/AppShell";
+import ToastProvider from "@/components/ToastProvider";
 import { getSessionFromCookies } from "@/lib/session";
 import "./globals.css";
 
@@ -32,11 +33,13 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-gradient-to-br from-slate-50 via-red-50/20 to-slate-100 text-zinc-900">
-        {session ? (
-          <AppShell session={session}>{children}</AppShell>
-        ) : (
-          <main>{children}</main>
-        )}
+        <ToastProvider>
+          {session ? (
+            <AppShell session={session}>{children}</AppShell>
+          ) : (
+            <main>{children}</main>
+          )}
+        </ToastProvider>
       </body>
     </html>
   );

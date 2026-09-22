@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useToast } from "./ToastProvider";
 import { Calculator, GitCompare, History as HistoryIcon, Paperclip, Star, Trash2 } from "lucide-react";
 import MdMatrix from "./MdMatrix";
 import Modal from "./Modal";
@@ -65,6 +66,7 @@ export default function ItemDetailModal({ item, onClose, canDelete, onDelete }: 
   const [nominating, setNominating] = useState(false);
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [note, setNote] = useState("");
+  const showToast = useToast();
 
   useEffect(() => {
     fetch(`/api/items/${item.id}/counterpart`)
@@ -97,6 +99,7 @@ export default function ItemDetailModal({ item, onClose, canDelete, onDelete }: 
       });
       setNominated(true);
       setShowNoteInput(false);
+      showToast("เสนอเป็น STD candidate แล้ว");
     } finally {
       setNominating(false);
     }
@@ -107,6 +110,7 @@ export default function ItemDetailModal({ item, onClose, canDelete, onDelete }: 
     try {
       await fetch(`/api/std-candidates?item_id=${item.id}`, { method: "DELETE" });
       setNominated(false);
+      showToast("เอาออกจาก STD candidate แล้ว");
     } finally {
       setNominating(false);
     }
