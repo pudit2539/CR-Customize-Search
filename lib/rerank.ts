@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { CrItemMatch } from "./types";
+import type { CrItemMatch, SourceType } from "./types";
 
 // Max score bonus for an item updated today, decaying towards 0 as it ages.
 // Small enough that a genuinely more relevant older match still outranks a
@@ -70,4 +70,25 @@ export async function rerankByRecency(
 
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, limit).map((s) => s.item);
+}
+
+// Shared by /api/search and /api/estimate — both do the exact same
+// embed-already-done → match_cr_items RPC → rerankByRecency sequence,
+// only differing in how many raw candidates to pull and how many to keep.
+// Throws on the RPC error so callers can decide how to report it (single
+// query vs. Promise.all batch need different error handling).
+export async function matchAndRerank(
+  supabase: SupabaseClient,
+  queryEmbedding: number[],
+  options: { rawCount: number; finalCount: number; sourceType?: SourceType | null }
+): Promise<CrItemMatch[]> {
+  const { data, error } = await supabase.rpc("match_cr_items", {
+    query_embedding: queryEmbedding,
+    match_count: options.rawCount,
+    filter_source_type: options.sourceType ?? null,
+  });
+  if (error) throw new Error(error.message);
+
+  const candidates = (data ?? []) as CrItemMatch[];
+  return rerankByRecency(supabase, candidates, options.finalCount);
 }

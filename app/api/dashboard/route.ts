@@ -30,9 +30,15 @@ export async function GET(request: Request) {
 
   const supabase = getSupabaseClient();
 
+  // Capped for the same reason as app/api/items/route.ts's ITEMS_CAP —
+  // without it PostgREST's own default row cap (~1000) silently truncates
+  // the aggregation once cr_items grows past that, wrong totals with no error.
+  const DASHBOARD_ITEMS_CAP = 5000;
+
   let query = supabase
     .from("cr_items")
-    .select("module, source_type, project, md_summary, cost");
+    .select("module, source_type, project, md_summary, cost")
+    .limit(DASHBOARD_ITEMS_CAP);
   if (sourceTypeFilter) query = query.eq("source_type", sourceTypeFilter);
   if (projectFilter) query = query.ilike("project", `%${projectFilter}%`);
 

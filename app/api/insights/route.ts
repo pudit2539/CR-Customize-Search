@@ -26,7 +26,10 @@ export async function GET() {
       .select("query, result_count, top_similarity, created_at")
       .order("created_at", { ascending: false })
       .limit(LOG_SCAN_LIMIT),
-    supabase.from("cr_items").select("module"),
+    // Capped for the same reason as the search_logs query above — without it
+    // PostgREST's default row cap silently truncates the module tally once
+    // cr_items grows past ~1000 rows.
+    supabase.from("cr_items").select("module").limit(5000),
   ]);
   if (logsRes.error) return NextResponse.json({ error: logsRes.error.message }, { status: 500 });
   if (modulesRes.error)

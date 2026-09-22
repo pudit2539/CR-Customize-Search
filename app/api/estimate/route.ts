@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/dal";
 import { embedQueries } from "@/lib/embed";
-import { rerankByRecency } from "@/lib/rerank";
+import { matchAndRerank } from "@/lib/rerank";
 import { getSupabaseClient } from "@/lib/supabase";
-import type { CrItemMatch, SourceType } from "@/lib/types";
+import type { SourceType } from "@/lib/types";
 
 const MAX_REQUIREMENTS = 30;
 const MATCHES_PER_REQUIREMENT = 3;
@@ -37,13 +37,11 @@ export async function POST(request: Request) {
 
   const results = await Promise.all(
     embeddings.map(async (embedding, i) => {
-      const { data, error } = await supabase.rpc("match_cr_items", {
-        query_embedding: embedding,
-        match_count: RAW_MATCHES_PER_REQUIREMENT,
-        filter_source_type: mode ?? null,
+      const matches = await matchAndRerank(supabase, embedding, {
+        rawCount: RAW_MATCHES_PER_REQUIREMENT,
+        finalCount: MATCHES_PER_REQUIREMENT,
+        sourceType: mode,
       });
-      if (error) throw new Error(error.message);
-      const matches = await rerankByRecency(supabase, (data ?? []) as CrItemMatch[], MATCHES_PER_REQUIREMENT);
       return { requirement: cleaned[i], matches };
     })
   ).catch((e: Error) => e);

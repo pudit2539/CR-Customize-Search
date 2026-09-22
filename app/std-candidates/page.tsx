@@ -143,7 +143,7 @@ export default function StdCandidatesPage() {
                       <button
                         onClick={() => setDetailItem(c.item)}
                         title="ดูรายละเอียด"
-                        className="rounded-lg border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50"
+                        className="btn-icon"
                       >
                         <Eye size={14} />
                       </button>

@@ -297,7 +297,7 @@ export default function ItemsPage() {
                             <button
                               onClick={() => startEdit(item)}
                               title="แก้ไข"
-                              className="rounded-lg border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50"
+                              className="btn-icon"
                             >
                               <Pencil size={14} />
                             </button>

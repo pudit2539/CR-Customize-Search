@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/dal";
 import { embedQuery } from "@/lib/embed";
-import { rerankByRecency } from "@/lib/rerank";
+import { matchAndRerank } from "@/lib/rerank";
 import { getSupabaseClient } from "@/lib/supabase";
-import type { CrItemMatch, SourceType } from "@/lib/types";
+import type { SourceType } from "@/lib/types";
 
 const MATCH_COUNT = 10;
 // Pull a larger candidate pool than we show so the recency tie-break in
@@ -27,17 +27,16 @@ export async function POST(request: Request) {
 
   // mode narrows results to the sheet matching what the user is estimating
   // for (new customer vs. existing customer); null searches both sides.
-  const { data, error } = await supabase.rpc("match_cr_items", {
-    query_embedding: queryEmbedding,
-    match_count: RAW_MATCH_COUNT,
-    filter_source_type: mode ?? null,
-  });
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  let matches;
+  try {
+    matches = await matchAndRerank(supabase, queryEmbedding, {
+      rawCount: RAW_MATCH_COUNT,
+      finalCount: MATCH_COUNT,
+      sourceType: mode,
+    });
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 });
   }
-
-  const candidates = (data ?? []) as CrItemMatch[];
-  const matches = await rerankByRecency(supabase, candidates, MATCH_COUNT);
 
   // Best-effort logging — a failed insert here shouldn't break the search
   // response the user is waiting on. synthesis fills in later via the

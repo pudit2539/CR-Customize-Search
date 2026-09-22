@@ -88,9 +88,13 @@ export default function EstimatePage() {
   const [docGuidelines, setDocGuidelines] = useState<{ requirement: string; guideline: string | null }[]>([]);
 
   useEffect(() => {
+    // Best-effort — DEFAULT_RATES (the initial state) already covers the
+    // case where this fails, so a fetch/parse error here just means the
+    // estimate uses the built-in defaults instead of the live rate card.
     fetch("/api/settings/rates")
-      .then((r) => r.json())
-      .then((json) => json.entries?.length && setRates(ratesMapFromEntries(json.entries)));
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => json?.entries?.length && setRates(ratesMapFromEntries(json.entries)))
+      .catch(() => {});
   }, []);
 
   const parsedCount = useMemo(() => splitRequirements(text).length, [text]);
@@ -458,7 +462,7 @@ export default function EstimatePage() {
                         <button
                           onClick={() => setDetailItem(match)}
                           title="ดูรายละเอียดเคสอ้างอิง"
-                          className="rounded-lg border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50"
+                          className="btn-icon"
                         >
                           <Eye size={14} />
                         </button>

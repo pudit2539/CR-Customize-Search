@@ -104,7 +104,12 @@ export async function extractItems(doc: DocInput): Promise<ExtractedItemDraft[]>
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
 
-  const client = new Anthropic({ apiKey });
+  // Explicit timeout so a slow response fails fast with a clear error
+  // instead of hanging until the platform's own function timeout kills it;
+  // maxRetries covers transient 429/5xx (this matches the SDK's own
+  // default, made explicit so it doesn't silently drift on a future
+  // SDK upgrade).
+  const client = new Anthropic({ apiKey, timeout: 60_000, maxRetries: 2 });
 
   const instruction =
     "แยก requirement ของ CR/Customize จากเอกสาร/ข้อความนี้ออกมาเป็น item(s) (อาจมีมากกว่า 1 รายการถ้าพูดถึงหลาย requirement)\n\nสำคัญมาก: ห้ามเดาหรือประมาณตัวเลข MD/cost เอง — ใส่เฉพาะตัวเลขที่ระบุไว้ตรงๆในเอกสารเท่านั้น ถ้าไม่ได้บอกตัวเลข ให้ไม่ต้องใส่ field นั้นเลย";
@@ -177,7 +182,7 @@ export async function extractRequirementsFromDocument(doc: DocInput): Promise<Ex
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
 
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({ apiKey, timeout: 60_000, maxRetries: 2 });
   const instruction =
     "แยก requirement ของลูกค้าจากเอกสารนี้ออกมาเป็นรายการ แต่ละรายการควรเป็น requirement เดียวที่ชัดเจน กระชับ พร้อมใช้ค้นหาในระบบ (ไม่ต้องสรุปรวมหลาย requirement เข้าด้วยกัน)";
 
@@ -205,7 +210,7 @@ export async function synthesizeMatches(query: string, matches: CrItemMatch[]): 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
 
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({ apiKey, timeout: 60_000, maxRetries: 2 });
 
   const context = matches
     .slice(0, 5)

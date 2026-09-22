@@ -242,7 +242,7 @@ export default function HistoryPage() {
                         <button
                           onClick={() => openItem(log.item_id, log.id)}
                           title="ดูรายละเอียด"
-                          className="rounded-lg border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50"
+                          className="btn-icon"
                         >
                           {itemLoadingId === log.id ? (
                             <span className="block h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600" />
