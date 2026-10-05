@@ -139,5 +139,5 @@ export async function GET() {
     weakSearches,
     perDay,
     topModules,
-  });
+  }, { headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=120" } });
 }

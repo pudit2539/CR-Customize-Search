@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, Columns3, Search as SearchIcon, Sparkles, X } from "lucide-react";
+import { Columns3, Search as SearchIcon, Sparkles, X } from "lucide-react";
 import Autocomplete from "@/components/Autocomplete";
 import CompareModal from "@/components/CompareModal";
-import HighlightText from "@/components/HighlightText";
 import ItemDetailModal from "@/components/ItemDetailModal";
-import MdMatrix from "@/components/MdMatrix";
+import ResultCard from "@/components/ResultCard";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
 import type { CrItemMatch } from "@/lib/types";
 
@@ -23,23 +22,6 @@ const EXAMPLE_QUERIES = [
   "Additional Bank มากกว่า 1 บัญชี",
   "Setup Role / Permission ตามบริษัท",
 ];
-
-// Kept neutral (no per-name rainbow color) so a case touching many clients
-// doesn't turn the result card into a wall of confetti — the project names
-// themselves are the information, not their color.
-function ProjectTags({ project }: { project: string | null }) {
-  if (!project) return null;
-  const names = project.split(",").map((p) => p.trim()).filter(Boolean);
-  return (
-    <span className="flex flex-wrap gap-1">
-      {names.map((name) => (
-        <span key={name} className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-          {name}
-        </span>
-      ))}
-    </span>
-  );
-}
 
 type SearchMode = "all" | "new_customer" | "existing_customer";
 
@@ -69,29 +51,34 @@ export default function Home() {
   // lib/rerank.ts. The practical stand-in for "learn from usage" (feedback
   // item 7.3): no fine-tuning pipeline exists, so confirmed matches just
   // accumulate a small future ranking boost instead.
-  async function confirmMatch(itemId: string) {
-    setConfirmedIds((prev) => new Set(prev).add(itemId));
-    try {
-      await fetch("/api/match-feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item_id: itemId, query }),
-      });
-    } catch {
-      // best-effort — the optimistic UI state already reflects the click
-    }
-  }
+  // useCallback keeps these referentially stable so the memoized ResultCards
+  // don't re-render on unrelated state changes (e.g. typing in the textarea).
+  const confirmMatch = useCallback(
+    async (itemId: string) => {
+      setConfirmedIds((prev) => new Set(prev).add(itemId));
+      try {
+        await fetch("/api/match-feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ item_id: itemId, query: lastQuery }),
+        });
+      } catch {
+        // best-effort — the optimistic UI state already reflects the click
+      }
+    },
+    [lastQuery]
+  );
 
-  function toggleCompare(id: string) {
+  const toggleCompare = useCallback((id: string) => {
     setCompareIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
       if (prev.length >= MAX_COMPARE) return prev;
       return [...prev, id];
     });
-  }
+  }, []);
 
   useEffect(() => {
-    fetch("/api/dashboard")
+    fetch("/api/dashboard?summary=1")
       .then((r) => r.json())
       .then((json) => setTotalItems(json.totalItems ?? null))
       .catch(() => {});
@@ -252,109 +239,27 @@ export default function Home() {
       )}
 
       {synthesis && (
-        <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 whitespace-pre-wrap">
+        <div className="fade-up mt-8 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 whitespace-pre-wrap">
           {synthesis}
         </div>
       )}
 
       {matches.length > 0 && (
         <div className="mt-6 space-y-4">
-          {visibleMatches.map((m) => (
-            <div key={m.id} className="surface-card surface-card-hover p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-2 text-xs text-zinc-500">
-                  <span className="rounded bg-zinc-100 px-2 py-0.5 font-medium text-zinc-600">
-                    {m.module ?? "-"}
-                  </span>
-                  <span>
-                    {MODE_LABEL[m.source_type]} · No.{m.item_no ?? "-"}
-                  </span>
-                </div>
-                <span className="whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-100">
-                  ใกล้เคียง {(m.similarity * 100).toFixed(0)}%
-                </span>
-              </div>
-
-              <p className="mt-2.5 text-sm leading-6 font-medium whitespace-pre-wrap text-zinc-900">
-                <HighlightText text={m.detail} query={lastQuery} />
-              </p>
-
-              {/* One relaxed meta line instead of a label/value grid — MD,
-                  cost, and industry read as a single glance, not four boxes. */}
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
-                <span className="flex items-center gap-1.5">
-                  <MdMatrix breakdown={m.md_breakdown} />
-                  {m.md_summary != null && <span>รวม {m.md_summary} MD</span>}
-                </span>
-                <span className="flex items-center gap-1">
-                  Cost:
-                  {m.cost != null ? (
-                    <span className="font-medium text-zinc-700">{m.cost.toLocaleString()}</span>
-                  ) : (
-                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-100">
-                      ไม่มีราคา STD
-                    </span>
-                  )}
-                </span>
-                {m.industry && (
-                  <span>
-                    Industry: <span className="text-zinc-700">{m.industry}</span>
-                  </span>
-                )}
-              </div>
-
-              {m.project && (
-                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
-                  <span className="text-zinc-400">Project:</span>
-                  <ProjectTags project={m.project} />
-                </div>
-              )}
-
-              {m.remark && (
-                <p className="mt-2.5 rounded-lg bg-zinc-50 p-2.5 text-xs whitespace-pre-wrap text-zinc-600">
-                  {m.remark}
-                </p>
-              )}
-
-              <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-zinc-50 pt-2.5">
-                <button
-                  onClick={() => setDetailItem(m)}
-                  className="text-xs font-medium text-zinc-600 hover:text-red-700 hover:underline"
-                >
-                  ดูรายละเอียด
-                </button>
-                <button
-                  onClick={() => toggleCompare(m.id)}
-                  disabled={!compareIds.includes(m.id) && compareIds.length >= MAX_COMPARE}
-                  title={
-                    !compareIds.includes(m.id) && compareIds.length >= MAX_COMPARE
-                      ? `เปรียบเทียบได้สูงสุด ${MAX_COMPARE} เคส`
-                      : undefined
-                  }
-                  className={`flex items-center gap-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40 ${
-                    compareIds.includes(m.id) ? "text-red-700" : "text-zinc-500 hover:text-red-700"
-                  }`}
-                >
-                  <Columns3 size={13} />
-                  {compareIds.includes(m.id) ? "เพิ่มในการเปรียบเทียบแล้ว" : "เปรียบเทียบ"}
-                </button>
-                {confirmedIds.has(m.id) ? (
-                  <span className="flex items-center gap-1 text-xs text-emerald-600">
-                    <CheckCircle2 size={13} />
-                    ยืนยันแล้ว ขอบคุณครับ/ค่ะ
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => confirmMatch(m.id)}
-                    title="ยืนยันว่าเคสนี้ตรงกับที่ค้นหาจริง — ช่วยให้ระบบจัดอันดับได้ดีขึ้นในครั้งถัดไป"
-                    className="flex items-center gap-1 text-xs text-zinc-500 hover:text-emerald-700"
-                  >
-                    <CheckCircle2 size={13} />
-                    ใช่ ตรงกับที่ต้องการ
-                  </button>
-                )}
-              </div>
-            </div>
+          {visibleMatches.map((m, i) => (
+            <ResultCard
+              key={m.id}
+              m={m}
+              index={i}
+              query={lastQuery}
+              inCompare={compareIds.includes(m.id)}
+              compareDisabled={!compareIds.includes(m.id) && compareIds.length >= MAX_COMPARE}
+              maxCompare={MAX_COMPARE}
+              confirmed={confirmedIds.has(m.id)}
+              onDetail={setDetailItem}
+              onToggleCompare={toggleCompare}
+              onConfirm={confirmMatch}
+            />
           ))}
 
           {!showAll && matches.length > RESULTS_PAGE_SIZE && (
@@ -369,7 +274,7 @@ export default function Home() {
       )}
 
       {compareIds.length >= 2 && !showCompare && (
-        <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 sm:inset-x-auto sm:right-4 sm:justify-end">
+        <div className="slide-up fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 sm:inset-x-auto sm:right-4 sm:justify-end">
           <div className="flex items-center gap-3 rounded-full border border-zinc-100 bg-white py-2 pr-2 pl-4 shadow-lg shadow-zinc-300/40">
             <span className="text-xs font-medium text-zinc-600">เลือกไว้ {compareIds.length} เคส</span>
             <button onClick={() => setShowCompare(true)} className="btn btn-primary py-1.5">

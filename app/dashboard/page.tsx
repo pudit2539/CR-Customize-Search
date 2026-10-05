@@ -2,23 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Chart,
-  BarController,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  type ChartEvent,
-  type ActiveElement,
-} from "chart.js";
+import type { Chart, ChartEvent, ActiveElement } from "chart.js";
 import { Building2, Download, LayoutDashboard, List, Search, SlidersHorizontal, Users } from "lucide-react";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import Autocomplete from "@/components/Autocomplete";
 import { allCategories } from "@/lib/moduleCategories";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
-
-Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
 
 interface CategoryCount {
   category: string;
@@ -94,9 +83,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!data || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    let cancelled = false;
 
+    // chart.js is ~200KB — load it on demand so the dashboard shell (KPIs,
+    // filters) paints first instead of waiting on the chart bundle.
+    import("chart.js").then(({ Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip }) => {
+    if (cancelled) return;
+    Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
     chartRef.current?.destroy();
-    chartRef.current = new Chart(canvasRef.current, {
+    chartRef.current = new Chart(canvas, {
       type: "bar",
       data: {
         labels: data.byCategory.map((c) => c.category),
@@ -141,7 +137,12 @@ export default function DashboardPage() {
       },
     });
 
-    return () => chartRef.current?.destroy();
+    });
+
+    return () => {
+      cancelled = true;
+      chartRef.current?.destroy();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, router]);
 
@@ -288,8 +289,8 @@ export default function DashboardPage() {
 
       <div className={`transition-opacity duration-200 ${filtering ? "opacity-40" : "opacity-100"}`}>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {kpis.map((k) => (
-          <div key={k.label} className={`rounded-2xl p-4 transition-transform hover:-translate-y-0.5 ${k.card}`}>
+        {kpis.map((k, i) => (
+          <div key={k.label} style={{ animationDelay: `${i * 60}ms` }} className={`fade-up rounded-2xl p-4 transition-transform hover:-translate-y-0.5 ${k.card}`}>
             <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${k.iconTint}`}>
               <k.icon size={17} />
             </span>

@@ -68,14 +68,55 @@ export async function embedDocuments(texts: string[]): Promise<number[][]> {
   return embed(texts, "document");
 }
 
+// Query vectors are a pure function of the text, and people re-run the same
+// searches constantly (example chips, "search again" from Insights/History).
+// A small per-instance cache skips the ~300ms+ Voyage round-trip for repeats;
+// Map keeps insertion order, so deleting the first key evicts the oldest.
+const QUERY_CACHE_MAX = 200;
+const QUERY_CACHE_TTL_MS = 30 * 60_000;
+const queryCache = new Map<string, { vector: number[]; at: number }>();
+
+function cacheGet(text: string): number[] | null {
+  const hit = queryCache.get(text);
+  if (!hit) return null;
+  if (Date.now() - hit.at > QUERY_CACHE_TTL_MS) {
+    queryCache.delete(text);
+    return null;
+  }
+  // Re-insert to mark as most recently used.
+  queryCache.delete(text);
+  queryCache.set(text, hit);
+  return hit.vector;
+}
+
+function cacheSet(text: string, vector: number[]) {
+  queryCache.set(text, { vector, at: Date.now() });
+  if (queryCache.size > QUERY_CACHE_MAX) {
+    const oldest = queryCache.keys().next().value;
+    if (oldest !== undefined) queryCache.delete(oldest);
+  }
+}
+
 // Used for the user's search query — Voyage tunes query vs. document
 // embeddings differently for retrieval quality.
 export async function embedQuery(text: string): Promise<number[]> {
+  const key = text.trim();
+  const cached = cacheGet(key);
+  if (cached) return cached;
   const [vector] = await embed([text], "query");
+  cacheSet(key, vector);
   return vector;
 }
 
 // Batch variant for the estimator — one Voyage call for many requirements.
+// Only the uncached texts go to Voyage.
 export async function embedQueries(texts: string[]): Promise<number[][]> {
-  return embed(texts, "query");
+  const keys = texts.map((t) => t.trim());
+  const result: (number[] | null)[] = keys.map(cacheGet);
+  const missing = [...new Set(keys.filter((_, i) => result[i] == null))];
+  if (missing.length > 0) {
+    const vectors = await embed(missing, "query");
+    missing.forEach((k, i) => cacheSet(k, vectors[i]));
+  }
+  return keys.map((k, i) => result[i] ?? cacheGet(k)!);
 }

@@ -33,22 +33,14 @@ export async function rerankByRecency(
 ): Promise<CrItemMatch[]> {
   if (candidates.length === 0) return candidates;
 
-  const { data: dated } = await supabase
-    .from("cr_items")
-    .select("id, updated_at")
-    .in(
-      "id",
-      candidates.map((c) => c.id)
-    );
+  // Independent lookups — run them together instead of back to back, which
+  // saves one full DB round-trip on every search.
+  const ids = candidates.map((c) => c.id);
+  const [{ data: dated }, { data: feedback }] = await Promise.all([
+    supabase.from("cr_items").select("id, updated_at").in("id", ids),
+    supabase.from("match_feedback").select("item_id").in("item_id", ids),
+  ]);
   const updatedAtById = new Map((dated ?? []).map((r) => [r.id, r.updated_at as string | null]));
-
-  const { data: feedback } = await supabase
-    .from("match_feedback")
-    .select("item_id")
-    .in(
-      "item_id",
-      candidates.map((c) => c.id)
-    );
   const confirmCountById = new Map<string, number>();
   for (const f of feedback ?? []) {
     confirmCountById.set(f.item_id, (confirmCountById.get(f.item_id) ?? 0) + 1);

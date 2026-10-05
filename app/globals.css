@@ -284,3 +284,55 @@ body {
     font-weight: 600;
   }
 }
+
+/* ---- Motion ----------------------------------------------------------
+   Small, fast (<=350ms) entrance effects. Transform/opacity only so they
+   stay on the GPU compositor; all disabled under prefers-reduced-motion. */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes grow-y {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* `backwards` holds the start state during a staggered delay but releases the
+   transform afterwards, so hover lifts (translate) still work on animated cards. */
+.fade-up { animation: fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.fade-in { animation: fade-in 0.2s ease-out both; }
+.pop-in { animation: pop-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.slide-up { animation: slide-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.page-enter { animation: fade-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.bar-grow-y { transform-origin: bottom; animation: grow-y 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.bar-grow-x { transform-origin: left; animation: grow-x 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Tactile press feedback on every button. */
+.btn, .btn-icon { transition: transform 0.12s ease, box-shadow 0.15s ease, background-color 0.15s ease; }
+.btn:active:not(:disabled), .btn-icon:active:not(:disabled) { transform: scale(0.96); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -126,8 +126,8 @@ export default function InsightsPage() {
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {kpis.map((k) => (
-          <div key={k.label} className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
+        {kpis.map((k, i) => (
+          <div key={k.label} style={{ animationDelay: `${i * 60}ms` }} className="fade-up rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
             <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${k.tint}`}>
               <k.icon size={17} />
             </span>
@@ -226,11 +226,11 @@ export default function InsightsPage() {
         <div className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm shadow-zinc-200/60">
           <h2 className="text-sm font-semibold text-zinc-900">การค้นหา 14 วันล่าสุด</h2>
           <div className="mt-4 flex h-32 items-end gap-1">
-            {data.perDay.map((d) => (
+            {data.perDay.map((d, i) => (
               <div key={d.day} className="group relative flex-1">
                 <div
-                  className="w-full rounded-t bg-zinc-800 transition-colors group-hover:bg-zinc-600"
-                  style={{ height: `${Math.max((d.count / maxPerDay) * 120, d.count > 0 ? 6 : 2)}px` }}
+                  className="bar-grow-y w-full rounded-t bg-zinc-800 transition-colors group-hover:bg-zinc-600"
+                  style={{ animationDelay: `${i * 30}ms`, height: `${Math.max((d.count / maxPerDay) * 120, d.count > 0 ? 6 : 2)}px` }}
                 />
                 <span className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 rounded bg-[var(--brand)] px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white opacity-0 group-hover:opacity-100">
                   {formatDate(d.day)}: {d.count}
@@ -249,15 +249,15 @@ export default function InsightsPage() {
             โมดูลที่โดน Customize บ่อยที่สุด
           </h2>
           <ul className="mt-4 space-y-2.5">
-            {data.topModules.map((m) => (
+            {data.topModules.map((m, i) => (
               <li key={m.module} className="flex items-center gap-3 text-sm">
                 <span className="w-28 shrink-0 truncate text-zinc-600" title={m.module}>
                   {m.module}
                 </span>
                 <div className="h-4 flex-1 overflow-hidden rounded bg-zinc-100">
                   <div
-                    className="h-full rounded bg-blue-500"
-                    style={{ width: `${(m.count / maxModule) * 100}%` }}
+                    className="bar-grow-x h-full rounded bg-blue-500"
+                    style={{ animationDelay: `${i * 60}ms`, width: `${(m.count / maxModule) * 100}%` }}
                   />
                 </div>
                 <span className="w-8 shrink-0 text-right text-xs text-zinc-500">{m.count}</span>

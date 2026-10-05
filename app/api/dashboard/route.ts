@@ -19,6 +19,10 @@ interface ClientCount {
   totalCost: number;
 }
 
+// Short private cache: revisiting the page / flipping filters back and forth
+// is instant, and stale-while-revalidate refreshes it in the background.
+const CACHE_HEADERS = { "Cache-Control": "private, max-age=30, stale-while-revalidate=120" };
+
 export async function GET(request: Request) {
   const auth = await requireAuth();
   if (auth.response) return auth.response;
@@ -29,6 +33,13 @@ export async function GET(request: Request) {
   const projectFilter = searchParams.get("project");
 
   const supabase = getSupabaseClient();
+
+  // The search page only needs the total for its subtitle — a head count
+  // instead of pulling and aggregating up to 5000 rows.
+  if (searchParams.get("summary") === "1") {
+    const { count } = await supabase.from("cr_items").select("id", { count: "exact", head: true });
+    return NextResponse.json({ totalItems: count ?? 0 }, { headers: CACHE_HEADERS });
+  }
 
   // Capped for the same reason as app/api/items/route.ts's ITEMS_CAP —
   // without it PostgREST's own default row cap (~1000) silently truncates
@@ -117,5 +128,5 @@ export async function GET(request: Request) {
     byCategory,
     byClient,
     totalSearches: totalSearches ?? 0,
-  });
+  }, { headers: CACHE_HEADERS });
 }
