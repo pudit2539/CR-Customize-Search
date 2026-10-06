@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import Autocomplete from "@/components/Autocomplete";
+import Pagination from "@/components/Pagination";
 import { allCategories } from "@/lib/moduleCategories";
 import { fetchCached, peekCache } from "@/lib/dataCache";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
@@ -61,6 +62,8 @@ export default function DashboardPage() {
   const [category, setCategory] = useState("");
   const [project, setProject] = useState("");
   const [clientSearch, setClientSearch] = useState("");
+  const [clientPage, setClientPage] = useState(1);
+  const [clientPageSize, setClientPageSize] = useState(10);
   const [error, setError] = useState<string | null>(null);
   const [filtering, setFiltering] = useState(false);
   const isAdmin = role === "admin";
@@ -100,6 +103,11 @@ export default function DashboardPage() {
       ? data.byClient.filter((c) => c.name.toLowerCase().includes(clientSearch.toLowerCase()))
       : data.byClient;
   }, [data, clientSearch]);
+
+  // Clamp so a refresh/filter that shrinks the list never leaves us past the end.
+  const clientPageCount = Math.max(1, Math.ceil(filteredClients.length / clientPageSize));
+  const safeClientPage = Math.min(clientPage, clientPageCount);
+  const pagedClients = filteredClients.slice((safeClientPage - 1) * clientPageSize, safeClientPage * clientPageSize);
 
   if (error && !data) {
     return (
@@ -291,12 +299,12 @@ export default function DashboardPage() {
 
         {/* Split donut + category breakdown */}
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
-          <section className="surface-card fade-up p-5" style={{ animationDelay: "120ms" }}>
+          <section className="surface-card fade-up flex flex-col p-5" style={{ animationDelay: "120ms" }}>
             <h2 className="section-title">
               <TrendingUp size={13} />
               สัดส่วนตามประเภทลูกค้า
             </h2>
-            <div className="relative mx-auto mt-5 h-44 w-44">
+            <div className="relative mx-auto mt-5 h-44 w-44 sm:mt-auto">
               <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
                 <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#eef0f5" strokeWidth="3.4" />
                 <circle
@@ -332,7 +340,7 @@ export default function DashboardPage() {
                 <span className="field-label mt-0.5">รายการ</span>
               </div>
             </div>
-            <ul className="mt-5 space-y-2 text-sm">
+            <ul className="mt-5 space-y-2 text-sm lg:mb-auto">
               {[
                 { label: SOURCE_TYPE_LABEL.new_customer, value: newCount, color: NEW_COLOR },
                 { label: SOURCE_TYPE_LABEL.existing_customer, value: existingCount, color: EXISTING_COLOR },
@@ -431,16 +439,19 @@ export default function DashboardPage() {
               <Search size={14} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" />
               <input
                 value={clientSearch}
-                onChange={(e) => setClientSearch(e.target.value)}
+                onChange={(e) => {
+                  setClientSearch(e.target.value);
+                  setClientPage(1);
+                }}
                 placeholder="ค้นหาชื่อลูกค้า..."
                 className="control w-full pl-8"
               />
             </div>
           </div>
 
-          <div className="border-t border-[var(--hairline)] sm:max-h-[28rem] sm:overflow-y-auto">
+          <div className="border-t border-[var(--hairline)]">
             <table className="table-responsive data-table w-full text-left text-sm">
-              <thead className="sticky top-0 z-10">
+              <thead>
                 <tr>
                   <th className="px-5 py-3">ลูกค้า/โปรเจกต์</th>
                   <th className="px-3 py-3">รายการ</th>
@@ -451,7 +462,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredClients.map((c) => (
+                {pagedClients.map((c) => (
                   <tr key={c.name}>
                     <td data-label="ลูกค้า/โปรเจกต์" className="px-5 py-3">
                       <button
@@ -498,6 +509,16 @@ export default function DashboardPage() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={safeClientPage}
+            pageSize={clientPageSize}
+            total={filteredClients.length}
+            onPageChange={setClientPage}
+            onPageSizeChange={(size) => {
+              setClientPageSize(size);
+              setClientPage(1);
+            }}
+          />
         </section>
       </div>
     </div>

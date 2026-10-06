@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, Eye, Star, Trash2 } from "lucide-react";
 import ItemDetailModal from "@/components/ItemDetailModal";
+import Pagination from "@/components/Pagination";
 import { useToast } from "@/components/ToastProvider";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
 import { allCategories, categoryOf } from "@/lib/moduleCategories";
@@ -28,6 +29,8 @@ export default function StdCandidatesPage() {
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [detailItem, setDetailItem] = useState<CrItemRow | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const showToast = useToast();
 
   function load() {
@@ -51,9 +54,19 @@ export default function StdCandidatesPage() {
   // Grouped by product-area category (same buckets as /items) so the
   // product team can review one area at a time instead of one long flat
   // list mixing every module together.
+  // Paged over the category-sorted list, then grouped within the visible page
+  // (a category heading simply repeats if its group spans two pages).
+  const pageCount = Math.max(1, Math.ceil(candidates.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
   const groupedCategories = useMemo(() => {
+    const order = allCategories();
+    const sorted = [...candidates].sort(
+      (a, b) =>
+        order.indexOf(categoryOf(a.item?.module ?? null)) - order.indexOf(categoryOf(b.item?.module ?? null))
+    );
+    const pageItems = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
     const groups = new Map<string, Candidate[]>();
-    for (const c of candidates) {
+    for (const c of pageItems) {
       const category = categoryOf(c.item?.module ?? null);
       if (!groups.has(category)) groups.set(category, []);
       groups.get(category)!.push(c);
@@ -61,7 +74,7 @@ export default function StdCandidatesPage() {
     return allCategories()
       .filter((cat) => groups.has(cat))
       .map((cat) => [cat, groups.get(cat)!] as [string, Candidate[]]);
-  }, [candidates]);
+  }, [candidates, currentPage, pageSize]);
 
   async function remove(itemId: string) {
     setRemovingId(itemId);
@@ -182,6 +195,18 @@ export default function StdCandidatesPage() {
               </div>
             </div>
           ))}
+          <div className="surface-card overflow-hidden">
+            <Pagination
+              page={currentPage}
+              pageSize={pageSize}
+              total={candidates.length}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
+          </div>
         </div>
       )}
 

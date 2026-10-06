@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp, Eye, History as HistoryIcon, RotateCcw } from "lucide-react";
 import ItemDetailModal from "@/components/ItemDetailModal";
+import Pagination from "@/components/Pagination";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
 import type { CrItemRow } from "@/lib/types";
 
@@ -73,23 +74,45 @@ export default function HistoryPage() {
   const [itemLoadingId, setItemLoadingId] = useState<string | null>(null);
   const [itemError, setItemError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag for the fetch this effect starts, not derived/external state
+  function load(t: "search" | "changes", nextPage: number, size: number) {
     setLoading(true);
     setLoadError(null);
-    fetch(`/api/history?type=${tab}`)
+    fetch(`/api/history?type=${t}&page=${nextPage}&page_size=${size}`)
       .then((r) => {
         if (!r.ok) throw new Error(`โหลดประวัติไม่สำเร็จ (${r.status})`);
         return r.json();
       })
       .then((json) => {
-        if (tab === "search") setSearchLogs(json.logs ?? []);
+        if (t === "search") setSearchLogs(json.logs ?? []);
         else setChangeLogs(json.logs ?? []);
+        setTotal(json.total ?? 0);
+        setPage(nextPage);
+        setPageSize(size);
       })
       .catch((err) => setLoadError(err instanceof Error ? err.message : "โหลดประวัติไม่สำเร็จ"))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load() sets the loading flag for the fetch it starts, not derived/external state
+    load(tab, 1, pageSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
+
+  const pager = (
+    <Pagination
+      page={page}
+      pageSize={pageSize}
+      total={total}
+      disabled={loading}
+      onPageChange={(p) => load(tab, p, pageSize)}
+      onPageSizeChange={(size) => load(tab, 1, size)}
+    />
+  );
 
   // Opens the full detail modal for an item referenced from a log entry —
   // deleted items 404 and get a small inline notice instead.
@@ -199,6 +222,7 @@ export default function HistoryPage() {
               )}
             </div>
           ))}
+          {total > 0 && <div className="surface-card overflow-hidden">{pager}</div>}
         </div>
       )}
 
@@ -264,6 +288,7 @@ export default function HistoryPage() {
               )}
             </tbody>
           </table>
+          {total > 0 && pager}
         </div>
       )}
 
