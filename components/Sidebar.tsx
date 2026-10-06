@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { warmPage } from "@/lib/dataCache";
 import { usePathname, useRouter } from "next/navigation";
 import Autocomplete from "./Autocomplete";
 import {
@@ -90,6 +91,8 @@ export default function Sidebar({
         key={item.href}
         href={item.href}
         onClick={onMobileClose}
+        onMouseEnter={() => warmPage(item.href)}
+        onFocus={() => warmPage(item.href)}
         title={collapsed ? item.label : undefined}
         className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-all ${
           active

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, Sparkles } from "lucide-react";
 import Sidebar from "./Sidebar";
+import { warmAllPages } from "@/lib/dataCache";
 
 interface Session {
   username: string;
@@ -17,6 +18,14 @@ export default function AppShell({
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Preload the main pages' data once the shell is up (idle, so it doesn't
+  // compete with the current page's own requests) — the first click on
+  // Dashboard/Items/Insights then finds the data already cached.
+  useEffect(() => {
+    const t = setTimeout(warmAllPages, 1200);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div className="flex h-screen flex-col md:flex-row md:gap-4 md:p-4">

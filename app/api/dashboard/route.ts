@@ -46,6 +46,9 @@ export async function GET(request: Request) {
   // the aggregation once cr_items grows past that, wrong totals with no error.
   const DASHBOARD_ITEMS_CAP = 5000;
 
+  // Started now so it overlaps the (larger) items query below.
+  const searchCountPromise = supabase.from("search_logs").select("id", { count: "exact", head: true });
+
   let query = supabase
     .from("cr_items")
     .select("module, source_type, project, md_summary, cost")
@@ -118,9 +121,7 @@ export async function GET(request: Request) {
     }))
     .sort((a, b) => b.total - a.total);
 
-  const { count: totalSearches } = await supabase
-    .from("search_logs")
-    .select("id", { count: "exact", head: true });
+  const { count: totalSearches } = await searchCountPromise;
 
   return NextResponse.json({
     totalItems: items.length,

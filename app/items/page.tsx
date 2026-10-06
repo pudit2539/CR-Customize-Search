@@ -6,6 +6,7 @@ import { Download, Eye, List, Pencil, Plus, Search, SlidersHorizontal } from "lu
 import AnimatedNumber from "@/components/AnimatedNumber";
 import Autocomplete from "@/components/Autocomplete";
 import ItemDetailModal from "@/components/ItemDetailModal";
+import { fetchCached, peekCache } from "@/lib/dataCache";
 import { prefetchItemDetail } from "@/lib/itemDetailCache";
 import ItemFormModal from "@/components/ItemFormModal";
 import MdMatrix from "@/components/MdMatrix";
@@ -34,9 +35,15 @@ function moduleColor(module: string | null) {
   return MODULE_COLORS[idx];
 }
 
+const PAGE_CHUNK = 60;
+
 export default function ItemsPage() {
   const searchParams = useSearchParams();
-  const [items, setItems] = useState<CrItemRow[]>([]);
+  // Seeded from the last visit when opening with no filters, so switching
+  // back to this page paints instantly while the mount effect revalidates.
+  const [items, setItems] = useState<CrItemRow[]>(() =>
+    searchParams.toString() ? [] : (peekCache<{ items?: CrItemRow[] }>("/api/items?")?.items ?? [])
+  );
   const [keyword, setKeyword] = useState("");
   // Pre-applied when arriving from a dashboard bar click
   // (/items?category=...&source_type=...).
@@ -44,9 +51,10 @@ export default function ItemsPage() {
   const [category, setCategory] = useState(searchParams.get("category") ?? "");
   const [project, setProject] = useState(searchParams.get("project") ?? "");
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<CrItemRow>>({});
-  const [role, setRole] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(() => peekCache<{ role?: string }>("/api/auth/me")?.role ?? null);
   const [detailItem, setDetailItem] = useState<CrItemRow | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,16 +63,24 @@ export default function ItemsPage() {
   // Category groups Module codes (TM, BN, ...) into business-level buckets —
   // there aren't enough distinct categories to justify a server-side filter,
   // so this narrows the already-fetched list client-side.
-  const visibleItems = useMemo(
+  // Render in chunks — painting every row (each with an MD matrix, badges and
+  // buttons) at once was the slow part of opening this page once the table
+  // grew past a few hundred items. Filtering/searching resets to the first chunk.
+  const [shown, setShown] = useState(PAGE_CHUNK);
+  const allVisibleItems = useMemo(
     () => (category ? items.filter((i) => categoryOf(i.module) === category) : items),
     [items, category]
   );
+  const visibleItems = useMemo(() => allVisibleItems.slice(0, shown), [allVisibleItems, shown]);
 
   // Accepts overrides so picking an autocomplete suggestion can search with
   // that value immediately — setKeyword/setProject wouldn't be visible here
   // yet since state updates land on the next render.
-  async function load(overrides?: { keyword?: string; project?: string }) {
-    setLoading(true);
+  async function load(overrides?: { keyword?: string; project?: string }, silent = false) {
+    // silent = background refresh over already-visible cached rows: no
+    // skeleton, no clearing on failure.
+    if (silent) setRefreshing(true);
+    else setLoading(true);
     setError(null);
     const params = new URLSearchParams();
     const effectiveKeyword = overrides?.keyword ?? keyword;
@@ -73,24 +89,24 @@ export default function ItemsPage() {
     if (sourceType) params.set("source_type", sourceType);
     if (effectiveProject) params.set("project", effectiveProject);
     try {
-      const res = await fetch(`/api/items?${params.toString()}`);
-      if (!res.ok) throw new Error(`โหลดรายการไม่สำเร็จ (${res.status})`);
-      const json = await res.json();
+      const json = await fetchCached<{ items?: CrItemRow[] }>(`/api/items?${params.toString()}`);
       setItems(json.items ?? []);
+      setShown(PAGE_CHUNK);
     } catch (err) {
-      setItems([]);
-      setError(err instanceof Error ? err.message : "โหลดรายการไม่สำเร็จ");
+      if (!silent) setItems([]);
+      setError(err instanceof Error ? `โหลดรายการไม่สำเร็จ (${err.message})` : "โหลดรายการไม่สำเร็จ");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- load() sets the loading flag for the fetch it starts, not derived/external state
-    load();
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((session) => setRole(session?.role ?? null));
+    load(undefined, items.length > 0);
+    fetchCached<{ role?: string }>("/api/auth/me")
+      .then((session) => setRole(session?.role ?? null))
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -154,8 +170,14 @@ export default function ItemsPage() {
           <span className="mr-1 text-sm font-semibold text-zinc-900">
             รายการ{" "}
             <span className="font-normal text-zinc-400">
-              ทั้งหมด <AnimatedNumber value={visibleItems.length} />
+              ทั้งหมด <AnimatedNumber value={allVisibleItems.length} />
             </span>
+            {refreshing && (
+              <span
+                title="กำลังอัปเดตข้อมูลล่าสุด"
+                className="ml-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-zinc-300 border-t-[var(--brand)] align-middle"
+              />
+            )}
           </span>
           <div className="relative w-full sm:w-56">
             <Search size={15} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 z-10 text-zinc-400" />
@@ -316,6 +338,16 @@ export default function ItemsPage() {
                 ))}
               </tbody>
             </table>
+            {allVisibleItems.length > shown && (
+              <div className="flex items-center justify-center gap-3 border-t border-zinc-100 p-3">
+                <button onClick={() => setShown((n) => n + PAGE_CHUNK)} className="btn btn-secondary">
+                  แสดงเพิ่ม ({Math.min(PAGE_CHUNK, allVisibleItems.length - shown)} จาก {allVisibleItems.length - shown} ที่เหลือ)
+                </button>
+                <button onClick={() => setShown(allVisibleItems.length)} className="text-sm text-zinc-500 hover:underline">
+                  แสดงทั้งหมด
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

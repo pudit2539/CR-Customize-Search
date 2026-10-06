@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Activity, AlertCircle, Lightbulb, RotateCcw, Search, TrendingUp } from "lucide-react";
 import AnimatedNumber from "@/components/AnimatedNumber";
+import { fetchCached, peekCache } from "@/lib/dataCache";
 
 interface TopQuery {
   query: string;
@@ -35,20 +36,17 @@ function formatDate(iso: string) {
 
 export default function InsightsPage() {
   const router = useRouter();
-  const [data, setData] = useState<InsightsData | null>(null);
+  // Seeded from the last visit so returning to this page paints instantly.
+  const [data, setData] = useState<InsightsData | null>(() => peekCache<InsightsData>("/api/insights"));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/insights")
-      .then((r) => {
-        if (!r.ok) throw new Error(`โหลด insights ไม่สำเร็จ (${r.status})`);
-        return r.json();
-      })
+    fetchCached<InsightsData & { error?: string }>("/api/insights")
       .then((json) => {
         if (json.error) setError(json.error);
         else setData(json);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+      .catch((e) => setError(e instanceof Error ? `โหลด insights ไม่สำเร็จ (${e.message})` : String(e)));
   }, []);
 
   if (error) {
