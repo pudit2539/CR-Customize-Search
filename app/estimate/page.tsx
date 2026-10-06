@@ -5,6 +5,7 @@ import { Calculator, Eye, FileSpreadsheet, Pencil, RotateCcw, Upload } from "luc
 import ItemDetailModal from "@/components/ItemDetailModal";
 import MdMatrix from "@/components/MdMatrix";
 import Modal from "@/components/Modal";
+import { prefetchItemDetail } from "@/lib/itemDetailCache";
 import SegmentedControl from "@/components/SegmentedControl";
 import { MD_ROLE_LABEL, SOURCE_TYPE_LABEL } from "@/lib/format";
 import { computeCostBreakdown, computeMdTotal, CORE_ROLES, DEFAULT_RATES, ratesMapFromEntries } from "@/lib/mdRates";
@@ -483,6 +484,8 @@ export default function EstimatePage() {
                         {match && (
                           <button
                             onClick={() => setDetailItem(match)}
+                            onMouseEnter={() => prefetchItemDetail(match.id)}
+                            onFocus={() => prefetchItemDetail(match.id)}
                             title="ดูรายละเอียดเคสอ้างอิง"
                             className="btn-icon"
                           >

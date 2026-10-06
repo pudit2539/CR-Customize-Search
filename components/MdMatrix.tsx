@@ -1,16 +1,13 @@
-import { Fragment } from "react";
 import type { MdBreakdown } from "@/lib/types";
 
-// Renders an MD breakdown as a small Fun/Dev × Level grid instead of a row
-// of colored pills — per 2026-07-24 feedback, easier to scan when a case
-// touches multiple roles at once. "Manager (PM)" and the legacy combined
-// "Dev Senior/Mgr" figure don't fit the Fun/Dev axis, so they're listed
-// underneath instead of forced into a column that would mostly be empty.
-//
-// Built as a CSS grid rather than a <table> — table column auto-sizing made
-// single-column headers (e.g. just "Senior") hug their text instead of
-// filling/centering in the cell; grid gives every cell explicit centering
-// regardless of how many level columns are present.
+// Renders an MD breakdown as a wrapping row of two-part chips — a tinted
+// "Fun · Senior" label beside a bold number — instead of a fixed grid.
+// Only roles that actually carry MD are shown (no empty "–" cells), so a
+// one-role case is a single chip and a multi-role case wraps naturally in
+// narrow table cells. Colors keep the Fun (sky) / Dev (violet) families used
+// elsewhere (lib/format.ts MD_ROLE_COLOR); "Manager (PM)" and the legacy
+// combined "Dev Senior/Mgr" figure get their own neutral / dashed-amber
+// styling since they don't sit on the Fun/Dev axis.
 const LEVELS = ["junior", "consultant", "senior", "manager"] as const;
 type Level = (typeof LEVELS)[number];
 const LEVEL_LABEL: Record<Level, string> = {
@@ -23,9 +20,19 @@ const CATEGORY_ROLE: Record<string, Partial<Record<Level, string>>> = {
   Fun: { junior: "fun_junior", consultant: "fun_consultant", senior: "fun_senior" },
   Dev: { junior: "dev_junior", consultant: "dev_consultant", senior: "dev_senior", manager: "dev_manager" },
 };
-// Matches the Fun/Dev color families already used for the pill views
-// elsewhere (lib/format.ts MD_ROLE_COLOR) so this reads as the same system.
-const CATEGORY_DOT: Record<string, string> = { Fun: "bg-sky-500", Dev: "bg-violet-500" };
+const CATEGORY_STYLE: Record<string, { label: string; dot: string; border: string }> = {
+  Fun: { label: "bg-sky-50 text-sky-700", dot: "bg-sky-500", border: "border-sky-200" },
+  Dev: { label: "bg-violet-50 text-violet-700", dot: "bg-violet-500", border: "border-violet-200" },
+};
+
+interface Chip {
+  key: string;
+  label: string;
+  value: number;
+  labelClass: string;
+  dot: string;
+  borderClass: string;
+}
 
 interface MdMatrixProps {
   breakdown: MdBreakdown | Partial<Record<string, number | null | undefined>> | null;
@@ -36,71 +43,61 @@ export default function MdMatrix({ breakdown: breakdownProp, className }: MdMatr
   // Cast once for bracket-notation access below — MdBreakdown has no index
   // signature, but every field this component reads is dynamic by role key.
   const breakdown = breakdownProp as Partial<Record<string, number | null | undefined>> | null;
-  if (!breakdown) return <span className="text-zinc-400">-</span>;
+  if (!breakdown) return <span className="text-slate-400">-</span>;
 
-  const usedLevels = LEVELS.filter((lvl) =>
-    Object.values(CATEGORY_ROLE).some((roles) => roles[lvl] && breakdown[roles[lvl]!] != null)
-  );
-  const usedCategories = Object.keys(CATEGORY_ROLE).filter((cat) =>
-    Object.values(CATEGORY_ROLE[cat]).some((role) => role && breakdown[role] != null)
-  );
-  const extras = [
-    breakdown.manager != null && { label: "Manager (PM)", value: breakdown.manager },
-    breakdown.dev_senior_mgr != null && { label: "Dev Senior/Mgr (เดิม)", value: breakdown.dev_senior_mgr },
-  ].filter((e): e is { label: string; value: number } => Boolean(e));
+  const chips: Chip[] = [];
+  for (const cat of Object.keys(CATEGORY_ROLE)) {
+    for (const lvl of LEVELS) {
+      const role = CATEGORY_ROLE[cat][lvl];
+      const v = role ? breakdown[role] : null;
+      if (v == null) continue;
+      const style = CATEGORY_STYLE[cat];
+      chips.push({
+        key: role!,
+        label: `${cat} · ${LEVEL_LABEL[lvl]}`,
+        value: v,
+        labelClass: style.label,
+        dot: style.dot,
+        borderClass: style.border,
+      });
+    }
+  }
+  if (breakdown.manager != null) {
+    chips.push({
+      key: "manager",
+      label: "Manager (PM)",
+      value: breakdown.manager,
+      labelClass: "bg-slate-100 text-slate-600",
+      dot: "bg-slate-500",
+      borderClass: "border-slate-200",
+    });
+  }
+  if (breakdown.dev_senior_mgr != null) {
+    chips.push({
+      key: "dev_senior_mgr",
+      label: "Dev Senior/Mgr (เดิม)",
+      value: breakdown.dev_senior_mgr,
+      labelClass: "bg-amber-50 text-amber-700",
+      dot: "bg-amber-500",
+      borderClass: "border-dashed border-amber-300",
+    });
+  }
 
-  if (usedCategories.length === 0 && extras.length === 0) return <span className="text-zinc-400">-</span>;
+  if (chips.length === 0) return <span className="text-slate-400">-</span>;
 
   return (
-    <div
-      className={`inline-block max-w-full overflow-hidden rounded-lg border border-slate-200/80 bg-white text-left ${className ?? ""}`}
-    >
-      {usedCategories.length > 0 && (
-        <div
-          className="grid text-xs tabular-nums"
-          style={{ gridTemplateColumns: `auto repeat(${usedLevels.length}, minmax(3rem, 1fr))` }}
+    <div className={`flex flex-wrap items-center gap-1.5 ${className ?? ""}`}>
+      {chips.map((c) => (
+        <span
+          key={c.key}
+          className={`inline-flex items-stretch overflow-hidden rounded-lg border bg-white text-xs ${c.borderClass}`}
         >
-          <div className="bg-slate-50 px-2.5 py-1" />
-          {usedLevels.map((lvl) => (
-            <div
-              key={lvl}
-              className="bg-slate-50 px-2.5 py-1 text-center text-[10px] font-semibold tracking-wide whitespace-nowrap text-slate-400 uppercase"
-            >
-              {LEVEL_LABEL[lvl]}
-            </div>
-          ))}
-          {usedCategories.map((cat) => (
-            <Fragment key={cat}>
-              <div className="flex items-center gap-1.5 border-t border-slate-100 px-2.5 py-1.5 font-semibold whitespace-nowrap text-slate-700">
-                <span className={`h-1.5 w-1.5 rounded-full ${CATEGORY_DOT[cat] ?? "bg-slate-400"}`} />
-                {cat}
-              </div>
-              {usedLevels.map((lvl) => {
-                const role = CATEGORY_ROLE[cat][lvl];
-                const v = role ? breakdown[role] : null;
-                return (
-                  <div
-                    key={lvl}
-                    className="border-t border-slate-100 px-2.5 py-1.5 text-center font-medium text-slate-800"
-                  >
-                    {v ?? <span className="font-normal text-slate-300">–</span>}
-                  </div>
-                );
-              })}
-            </Fragment>
-          ))}
-        </div>
-      )}
-      {extras.map((e, i) => (
-        <div
-          key={e.label}
-          className={`flex items-center justify-between gap-4 bg-slate-50/70 px-2.5 py-1.5 text-[11px] whitespace-nowrap tabular-nums ${
-            usedCategories.length > 0 || i > 0 ? "border-t border-slate-100" : ""
-          }`}
-        >
-          <span className="text-slate-500">{e.label}</span>
-          <span className="font-semibold text-slate-700">{e.value} MD</span>
-        </div>
+          <span className={`flex items-center gap-1.5 px-2 py-1 font-medium whitespace-nowrap ${c.labelClass}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
+            {c.label}
+          </span>
+          <span className="flex items-center px-2 py-1 font-semibold text-slate-900 tabular-nums">{c.value}</span>
+        </span>
       ))}
     </div>
   );

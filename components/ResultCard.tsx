@@ -5,6 +5,7 @@ import { CheckCircle2, Columns3 } from "lucide-react";
 import HighlightText from "./HighlightText";
 import MdMatrix from "./MdMatrix";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
+import { prefetchItemDetail } from "@/lib/itemDetailCache";
 import type { CrItemMatch } from "@/lib/types";
 
 const MODE_LABEL = SOURCE_TYPE_LABEL;
@@ -114,6 +115,8 @@ function ResultCard({
       <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-zinc-50 pt-2.5">
         <button
           onClick={() => onDetail(m)}
+                  onMouseEnter={() => prefetchItemDetail(m.id)}
+                  onFocus={() => prefetchItemDetail(m.id)}
           className="text-xs font-medium text-zinc-600 hover:text-red-700 hover:underline"
         >
           ดูรายละเอียด

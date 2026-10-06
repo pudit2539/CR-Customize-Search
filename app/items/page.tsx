@@ -6,6 +6,7 @@ import { Download, Eye, List, Pencil, Plus, Search, SlidersHorizontal } from "lu
 import AnimatedNumber from "@/components/AnimatedNumber";
 import Autocomplete from "@/components/Autocomplete";
 import ItemDetailModal from "@/components/ItemDetailModal";
+import { prefetchItemDetail } from "@/lib/itemDetailCache";
 import ItemFormModal from "@/components/ItemFormModal";
 import MdMatrix from "@/components/MdMatrix";
 import { allCategories, categoryOf } from "@/lib/moduleCategories";
@@ -292,6 +293,8 @@ export default function ItemsPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setDetailItem(item)}
+                            onMouseEnter={() => prefetchItemDetail(item.id)}
+                            onFocus={() => prefetchItemDetail(item.id)}
                             title="ดูรายละเอียด"
                             className="rounded-lg bg-[var(--brand)] p-2 text-white hover:bg-[var(--brand-dark)]"
                           >

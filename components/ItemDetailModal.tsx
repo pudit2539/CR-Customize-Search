@@ -7,6 +7,7 @@ import MdMatrix from "./MdMatrix";
 import Modal from "./Modal";
 import { MD_ROLE_LABEL, SOURCE_TYPE_LABEL } from "@/lib/format";
 import { computeCostBreakdown, DEFAULT_RATES, ratesMapFromEntries } from "@/lib/mdRates";
+import { loadItemDetail, patchItemDetail, peekItemDetail } from "@/lib/itemDetailCache";
 import { sourceFileDateLabel } from "@/lib/sourceFileDates";
 import type { CrItemRow } from "@/lib/types";
 
@@ -57,36 +58,43 @@ interface ItemDetailModalProps {
 }
 
 export default function ItemDetailModal({ item, onClose, canDelete, onDelete }: ItemDetailModalProps) {
-  const [counterpart, setCounterpart] = useState<Counterpart | null | undefined>(undefined);
-  const [history, setHistory] = useState<ChangeLogEntry[]>([]);
+  // Seed from the prefetch cache so a warmed item opens fully populated with
+  // no loading flash.
+  const cached = peekItemDetail(item.id);
+  const [counterpart, setCounterpart] = useState<Counterpart | null | undefined>(cached?.counterpart);
+  const [history, setHistory] = useState<ChangeLogEntry[]>((cached?.logs as ChangeLogEntry[]) ?? []);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [rates, setRates] = useState<Record<string, number>>(DEFAULT_RATES);
-  const [relatedFiles, setRelatedFiles] = useState<{ id: string; filename: string }[]>([]);
-  const [nominated, setNominated] = useState<boolean | undefined>(undefined);
+  const [rates, setRates] = useState<Record<string, number>>(
+    cached?.rateEntries.length ? ratesMapFromEntries(cached.rateEntries) : DEFAULT_RATES
+  );
+  const [relatedFiles, setRelatedFiles] = useState<{ id: string; filename: string }[]>(cached?.files ?? []);
+  const [nominated, setNominated] = useState<boolean | undefined>(cached?.nominated);
   const [nominating, setNominating] = useState(false);
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [note, setNote] = useState("");
   const showToast = useToast();
 
   useEffect(() => {
-    fetch(`/api/items/${item.id}/counterpart`)
-      .then((r) => r.json())
-      .then((json) => setCounterpart(json.counterpart ?? null));
-    fetch(`/api/items/${item.id}/history`)
-      .then((r) => r.json())
-      .then((json) => setHistory(json.logs ?? []));
-    fetch("/api/settings/rates")
-      .then((r) => r.json())
-      .then((json) => json.entries?.length && setRates(ratesMapFromEntries(json.entries)));
-    fetch(`/api/items/${item.id}/related-files`)
-      .then((r) => r.json())
-      .then((json) => setRelatedFiles(json.files ?? []));
-    fetch("/api/std-candidates")
-      .then((r) => r.json())
-      .then((json) => {
-        const list = (json.candidates ?? []) as { item?: { id: string } | null }[];
-        setNominated(list.some((c) => c.item?.id === item.id));
+    // One combined request (usually already warmed by prefetchItemDetail on
+    // hover) instead of five separate ones.
+    let cancelled = false;
+    loadItemDetail(item.id)
+      .then((d) => {
+        if (cancelled) return;
+        setCounterpart(d.counterpart);
+        setHistory(d.logs as ChangeLogEntry[]);
+        setRelatedFiles(d.files);
+        setNominated(d.nominated);
+        if (d.rateEntries.length) setRates(ratesMapFromEntries(d.rateEntries));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCounterpart(null);
+        setNominated(false);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [item.id]);
 
   async function nominate() {
@@ -98,6 +106,7 @@ export default function ItemDetailModal({ item, onClose, canDelete, onDelete }: 
         body: JSON.stringify({ item_id: item.id, note }),
       });
       setNominated(true);
+      patchItemDetail(item.id, { nominated: true });
       setShowNoteInput(false);
       showToast("เสนอเป็น STD candidate แล้ว");
     } finally {
@@ -110,6 +119,7 @@ export default function ItemDetailModal({ item, onClose, canDelete, onDelete }: 
     try {
       await fetch(`/api/std-candidates?item_id=${item.id}`, { method: "DELETE" });
       setNominated(false);
+      patchItemDetail(item.id, { nominated: false });
       showToast("เอาออกจาก STD candidate แล้ว");
     } finally {
       setNominating(false);
