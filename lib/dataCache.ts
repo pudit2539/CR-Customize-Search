@@ -40,7 +40,7 @@ export function prefetchCache(url: string) {
 // The default (unfiltered) data behind each menu entry.
 export const PAGE_DATA_URLS: Record<string, string> = {
   "/dashboard": "/api/dashboard?",
-  "/items": "/api/items?",
+  "/items": "/api/items?page=1&page_size=10",
   "/insights": "/api/insights",
 };
 

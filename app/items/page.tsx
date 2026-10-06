@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Download, Eye, List, Pencil, Plus, Search, SlidersHorizontal } from "lucide-react";
 import AnimatedNumber from "@/components/AnimatedNumber";
@@ -10,6 +10,7 @@ import { fetchCached, peekCache } from "@/lib/dataCache";
 import { prefetchItemDetail } from "@/lib/itemDetailCache";
 import ItemFormModal from "@/components/ItemFormModal";
 import MdMatrix from "@/components/MdMatrix";
+import Pagination from "@/components/Pagination";
 import { allCategories, categoryOf } from "@/lib/moduleCategories";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
 import type { CrItemRow } from "@/lib/types";
@@ -35,15 +36,24 @@ function moduleColor(module: string | null) {
   return MODULE_COLORS[idx];
 }
 
-const PAGE_CHUNK = 60;
+const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_URL = "/api/items?page=1&page_size=10";
+
+interface ItemsResponse {
+  items?: CrItemRow[];
+  total?: number;
+}
 
 export default function ItemsPage() {
   const searchParams = useSearchParams();
   // Seeded from the last visit when opening with no filters, so switching
   // back to this page paints instantly while the mount effect revalidates.
-  const [items, setItems] = useState<CrItemRow[]>(() =>
-    searchParams.toString() ? [] : (peekCache<{ items?: CrItemRow[] }>("/api/items?")?.items ?? [])
-  );
+  const cachedFirstPage = searchParams.toString() ? null : peekCache<ItemsResponse>(DEFAULT_URL);
+  const [items, setItems] = useState<CrItemRow[]>(() => cachedFirstPage?.items ?? []);
+  const [total, setTotal] = useState(() => cachedFirstPage?.total ?? 0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const tableTopRef = useRef<HTMLDivElement>(null);
   const [keyword, setKeyword] = useState("");
   // Pre-applied when arriving from a dashboard bar click
   // (/items?category=...&source_type=...).
@@ -60,40 +70,41 @@ export default function ItemsPage() {
   const [error, setError] = useState<string | null>(null);
   const isAdmin = role === "admin";
 
-  // Category groups Module codes (TM, BN, ...) into business-level buckets —
-  // there aren't enough distinct categories to justify a server-side filter,
-  // so this narrows the already-fetched list client-side.
-  // Render in chunks — painting every row (each with an MD matrix, badges and
-  // buttons) at once was the slow part of opening this page once the table
-  // grew past a few hundred items. Filtering/searching resets to the first chunk.
-  const [shown, setShown] = useState(PAGE_CHUNK);
-  const allVisibleItems = useMemo(
-    () => (category ? items.filter((i) => categoryOf(i.module) === category) : items),
-    [items, category]
-  );
-  const visibleItems = useMemo(() => allVisibleItems.slice(0, shown), [allVisibleItems, shown]);
-
   // Accepts overrides so picking an autocomplete suggestion can search with
   // that value immediately — setKeyword/setProject wouldn't be visible here
   // yet since state updates land on the next render.
-  async function load(overrides?: { keyword?: string; project?: string }, silent = false) {
+  // Paging is server-side: each call fetches just one page. Searching or
+  // changing a filter starts again at page 1; paging/resizing/refreshing
+  // passes the page explicitly.
+  async function load(
+    overrides?: { keyword?: string; project?: string; page?: number; pageSize?: number },
+    silent = false
+  ) {
     // silent = background refresh over already-visible cached rows: no
     // skeleton, no clearing on failure.
     if (silent) setRefreshing(true);
     else setLoading(true);
     setError(null);
-    const params = new URLSearchParams();
+    const effectivePage = overrides?.page ?? 1;
+    const effectivePageSize = overrides?.pageSize ?? pageSize;
+    const params = new URLSearchParams({ page: String(effectivePage), page_size: String(effectivePageSize) });
     const effectiveKeyword = overrides?.keyword ?? keyword;
     const effectiveProject = overrides?.project ?? project;
     if (effectiveKeyword) params.set("keyword", effectiveKeyword);
     if (sourceType) params.set("source_type", sourceType);
+    if (category) params.set("category", category);
     if (effectiveProject) params.set("project", effectiveProject);
     try {
-      const json = await fetchCached<{ items?: CrItemRow[] }>(`/api/items?${params.toString()}`);
+      const json = await fetchCached<ItemsResponse>(`/api/items?${params.toString()}`);
       setItems(json.items ?? []);
-      setShown(PAGE_CHUNK);
+      setTotal(json.total ?? 0);
+      setPage(effectivePage);
+      setPageSize(effectivePageSize);
     } catch (err) {
-      if (!silent) setItems([]);
+      if (!silent) {
+        setItems([]);
+        setTotal(0);
+      }
       setError(err instanceof Error ? `โหลดรายการไม่สำเร็จ (${err.message})` : "โหลดรายการไม่สำเร็จ");
     } finally {
       setLoading(false);
@@ -123,13 +134,18 @@ export default function ItemsPage() {
       body: JSON.stringify(draft),
     });
     setEditingId(null);
-    load();
+    load({ page });
   }
 
   async function removeFromModal(id: string) {
     await fetch(`/api/items/${id}`, { method: "DELETE" });
     setDetailItem(null);
-    load();
+    load({ page });
+  }
+
+  function goToPage(next: number, size = pageSize) {
+    load({ page: next, pageSize: size });
+    tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
@@ -165,12 +181,12 @@ export default function ItemsPage() {
         )}
       </div>
 
-      <div className="mt-6 surface-card">
+      <div ref={tableTopRef} className="surface-card mt-6 scroll-mt-4">
         <div className="flex flex-col gap-2 border-b border-zinc-100 p-4 sm:flex-row sm:flex-wrap sm:items-center">
           <span className="mr-1 text-sm font-semibold text-zinc-900">
             รายการ{" "}
             <span className="font-normal text-zinc-400">
-              ทั้งหมด <AnimatedNumber value={allVisibleItems.length} />
+              ทั้งหมด <AnimatedNumber value={total} />
             </span>
             {refreshing && (
               <span
@@ -244,7 +260,7 @@ export default function ItemsPage() {
               </div>
             ))}
           </div>
-        ) : visibleItems.length === 0 ? (
+        ) : items.length === 0 ? (
           <p className="p-6 text-center text-sm text-zinc-400">ไม่พบรายการ</p>
         ) : (
           <div className="p-3 sm:overflow-x-auto sm:p-0">
@@ -261,7 +277,7 @@ export default function ItemsPage() {
                 </tr>
               </thead>
               <tbody>
-                {visibleItems.map((item) => (
+                {items.map((item) => (
                   <tr key={item.id} className="border-t border-zinc-100 align-top hover:bg-zinc-50/60 sm:border-t">
                     <td data-label="รายการ" className="max-w-md px-4 py-3">
                       <div className="flex items-start gap-3">
@@ -338,17 +354,18 @@ export default function ItemsPage() {
                 ))}
               </tbody>
             </table>
-            {allVisibleItems.length > shown && (
-              <div className="flex items-center justify-center gap-3 border-t border-zinc-100 p-3">
-                <button onClick={() => setShown((n) => n + PAGE_CHUNK)} className="btn btn-secondary">
-                  แสดงเพิ่ม ({Math.min(PAGE_CHUNK, allVisibleItems.length - shown)} จาก {allVisibleItems.length - shown} ที่เหลือ)
-                </button>
-                <button onClick={() => setShown(allVisibleItems.length)} className="text-sm text-zinc-500 hover:underline">
-                  แสดงทั้งหมด
-                </button>
-              </div>
-            )}
           </div>
+        )}
+
+        {total > 0 && (
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            disabled={loading || refreshing}
+            onPageChange={(p) => goToPage(p)}
+            onPageSizeChange={(size) => goToPage(1, size)}
+          />
         )}
       </div>
 

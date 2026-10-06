@@ -38,6 +38,10 @@ export function allCategories(): string[] {
   return [...Object.keys(CATEGORY_MODULES), OTHER_CATEGORY];
 }
 
+export function allKnownModules(): string[] {
+  return Object.keys(MODULE_TO_CATEGORY);
+}
+
 export function modulesInCategory(category: string): string[] | null {
   if (category === OTHER_CATEGORY) return null; // caller handles "anything unmapped"
   return CATEGORY_MODULES[category] ?? [];
