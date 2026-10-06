@@ -42,7 +42,7 @@ export default function AppShell({
         onMobileClose={() => setMobileOpen(false)}
       />
 
-      <main className="min-w-0 flex-1 overflow-y-auto md:rounded-2xl md:border md:border-zinc-100 md:bg-white md:shadow-sm md:shadow-zinc-200/70">
+      <main className="min-w-0 flex-1 overflow-y-auto bg-[var(--canvas)] md:rounded-2xl md:border md:border-slate-200/70 md:shadow-[0_1px_3px_rgb(15_23_42/0.06)]">
         {children}
       </main>
     </div>

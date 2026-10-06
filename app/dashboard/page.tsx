@@ -167,7 +167,7 @@ export default function DashboardPage() {
         <div className="skeleton mt-6 h-16 rounded-2xl" />
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
+            <div key={i} className="surface-card p-4">
               <div className="skeleton h-9 w-9 rounded-lg" />
               <div className="skeleton mt-3 h-3 w-20 rounded" />
               <div className="skeleton mt-2 h-6 w-14 rounded" />
@@ -302,7 +302,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="mt-4 rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm shadow-zinc-200/60">
+      <div className="mt-4 surface-card p-6">
         <div className="flex flex-wrap gap-4 text-xs text-zinc-500">
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm" style={{ background: NEW_COLOR }} />

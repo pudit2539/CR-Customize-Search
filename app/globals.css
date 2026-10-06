@@ -8,13 +8,16 @@
      visually consistent instead of each page picking its own radius/shadow. */
   --radius-card: 1.1rem;
   --radius-control: 0.65rem;
-  --shadow-card: 0 1px 2px 0 rgb(24 24 27 / 0.05), 0 4px 16px -4px rgb(24 24 27 / 0.07);
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 2px 8px -2px rgb(15 23 42 / 0.05);
   --shadow-card-hover: 0 2px 4px 0 rgb(24 24 27 / 0.06), 0 12px 28px -8px rgb(200 16 46 / 0.18);
   --shadow-btn-primary: 0 2px 6px -1px rgb(200 16 46 / 0.35), 0 1px 2px rgb(200 16 46 / 0.2);
 
   /* PINNO brand red — matches the IPOP HR product's accent (also used as
      BRAND_RED in lib import-template generation) so this app reads as part
      of the same product family instead of its own one-off purple theme. */
+  --canvas: #f5f6fa; /* page canvas — cards (white) sit on this, giving depth */
+  --ink: #0f172a;
+  --hairline: #e6e8ef;
   --brand: #c8102e;
   --brand-dark: #96091f;
   --brand-gradient: linear-gradient(135deg, #d21b3c 0%, var(--brand-dark) 100%);
@@ -23,7 +26,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter), var(--font-plex-thai);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -36,9 +39,16 @@
 }
 
 body {
-  background: var(--background);
+  background: linear-gradient(135deg, #eef0f6 0%, #f6eef0 55%, #eceff5 100%) fixed;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), var(--font-plex-thai), system-ui, sans-serif;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+}
+
+/* Slim, quiet scrollbars — the default chunky gray bar read as unfinished. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd2de transparent;
 }
 
 /* Shared primitives — use these instead of hand-picking rounded-xl/2xl,
@@ -47,7 +57,7 @@ body {
 @layer components {
   .surface-card {
     border-radius: var(--radius-card);
-    border: 1px solid var(--color-zinc-100);
+    border: 1px solid var(--hairline);
     background: #fff;
     box-shadow: var(--shadow-card);
     transition: box-shadow 0.2s ease, transform 0.2s ease;
@@ -106,7 +116,7 @@ body {
     box-shadow: var(--shadow-btn-primary);
   }
   .btn-primary:hover:not(:disabled) {
-    box-shadow: 0 4px 12px -1px rgb(79 70 229 / 0.45), 0 2px 4px rgb(79 70 229 / 0.25);
+    box-shadow: 0 6px 14px -2px rgb(200 16 46 / 0.4), 0 2px 4px rgb(200 16 46 / 0.2);
     transform: translateY(-1px);
   }
 
@@ -334,5 +344,136 @@ body {
     animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ---- Enterprise primitives -------------------------------------------
+   Shared building blocks for the data-heavy screens (quotation table, item
+   detail, history). Quiet neutrals + one brand accent; hierarchy comes from
+   type weight/size and hairlines rather than boxes and shadows. */
+@layer components {
+  /* Section inside a card/modal: small-caps title row + content. */
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-slate-500);
+  }
+  .section-title svg {
+    color: var(--color-slate-400);
+  }
+
+  .field-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-slate-400);
+  }
+
+  /* Pill badges — tinted bg + ring, never saturated blocks. */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 999px;
+    padding: 0.125rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    white-space: nowrap;
+    box-shadow: inset 0 0 0 1px var(--badge-ring, transparent);
+  }
+  .badge-neutral { background: var(--color-slate-100); color: var(--color-slate-600); --badge-ring: var(--color-slate-200); }
+  .badge-brand { background: #fdecef; color: var(--brand-dark); --badge-ring: #f8c9d1; }
+  .badge-success { background: var(--color-emerald-50); color: var(--color-emerald-700); --badge-ring: var(--color-emerald-200); }
+  .badge-warn { background: var(--color-amber-50); color: var(--color-amber-700); --badge-ring: var(--color-amber-200); }
+  .badge-danger { background: var(--color-red-50); color: var(--color-red-700); --badge-ring: var(--color-red-200); }
+  .badge-info { background: var(--color-sky-50); color: var(--color-sky-700); --badge-ring: var(--color-sky-200); }
+
+  /* Key-figure tile (total MD, cost, count…). */
+  .stat-tile {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--hairline);
+    background: #fff;
+    padding: 0.85rem 1rem;
+    box-shadow: var(--shadow-card);
+  }
+  .stat-tile .stat-value {
+    margin-top: 0.2rem;
+    font-size: 1.5rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Enterprise data table (sm+). Pair with .table-responsive for mobile. */
+  .data-table thead th {
+    background: #f8f9fc;
+    color: var(--color-slate-500);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--hairline);
+    white-space: nowrap;
+  }
+  .data-table tbody tr {
+    transition: background-color 0.12s ease;
+  }
+  .data-table tbody tr:hover {
+    background: #fafbfe;
+  }
+  .data-table tbody td {
+    border-top: 1px solid #eef0f5;
+  }
+  .data-table tfoot td {
+    background: #f8f9fc;
+    border-top: 1px solid var(--hairline);
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  /* Modal chrome */
+  .modal-panel {
+    border-radius: 1.25rem;
+    border: 1px solid var(--hairline);
+    background: #fff;
+    box-shadow: 0 24px 60px -12px rgb(15 23 42 / 0.35), 0 4px 12px rgb(15 23 42 / 0.08);
+  }
+
+  /* Vertical timeline (change history) */
+  .timeline {
+    position: relative;
+    margin-left: 0.35rem;
+    border-left: 1px solid var(--hairline);
+  }
+  .timeline > li {
+    position: relative;
+    padding: 0 0 0.85rem 1.1rem;
+  }
+  .timeline > li:last-child {
+    padding-bottom: 0;
+  }
+  .timeline > li::before {
+    content: "";
+    position: absolute;
+    left: -0.2rem;
+    top: 0.35rem;
+    height: 0.4rem;
+    width: 0.4rem;
+    border-radius: 999px;
+    background: var(--color-slate-300);
+    box-shadow: 0 0 0 3px #fff;
+  }
+  .timeline > li:first-child::before {
+    background: var(--brand);
   }
 }

@@ -7,6 +7,7 @@ import Autocomplete from "@/components/Autocomplete";
 import CompareModal from "@/components/CompareModal";
 import ItemDetailModal from "@/components/ItemDetailModal";
 import ResultCard from "@/components/ResultCard";
+import SegmentedControl from "@/components/SegmentedControl";
 import { SOURCE_TYPE_LABEL } from "@/lib/format";
 import type { CrItemMatch } from "@/lib/types";
 
@@ -143,21 +144,16 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="mt-7 inline-flex rounded-full border border-zinc-200 bg-white p-1 shadow-sm shadow-zinc-200/50">
-        {(["all", "new_customer", "existing_customer"] as const).map((m) => (
-          <button
-            key={m}
-            onClick={() => setMode(m)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-              mode === m
-                ? "shadow-sm shadow-red-300/50"
-                : "text-zinc-500 hover:text-zinc-900"
-            }`}
-            style={mode === m ? { background: "var(--brand-gradient)", color: "#fff" } : undefined}
-          >
-            {m === "all" ? "ทั้งหมด" : MODE_LABEL[m]}
-          </button>
-        ))}
+      <div className="mt-7">
+        <SegmentedControl
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "all", label: "ทั้งหมด" },
+            { value: "new_customer", label: MODE_LABEL.new_customer },
+            { value: "existing_customer", label: MODE_LABEL.existing_customer },
+          ]}
+        />
       </div>
 
       <div className="mt-4 surface-card p-2">
@@ -211,7 +207,7 @@ export default function Home() {
             กำลังค้นหาและวิเคราะห์เคสที่ใกล้เคียง...
           </div>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="rounded-xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
+            <div key={i} className="surface-card p-4">
               <div className="skeleton h-3 w-28 rounded" />
               <div className="skeleton mt-3 h-3 w-full rounded" />
               <div className="skeleton mt-2 h-3 w-2/3 rounded" />

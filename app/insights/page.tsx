@@ -66,7 +66,7 @@ export default function InsightsPage() {
         <div className="skeleton h-7 w-40 rounded" />
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
+            <div key={i} className="surface-card p-4">
               <div className="skeleton h-9 w-9 rounded-lg" />
               <div className="skeleton mt-3 h-3 w-20 rounded" />
               <div className="skeleton mt-2 h-6 w-14 rounded" />
@@ -127,7 +127,7 @@ export default function InsightsPage() {
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {kpis.map((k, i) => (
-          <div key={k.label} style={{ animationDelay: `${i * 60}ms` }} className="fade-up rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm shadow-zinc-200/60">
+          <div key={k.label} style={{ animationDelay: `${i * 60}ms` }} className="fade-up surface-card p-4">
             <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${k.tint}`}>
               <k.icon size={17} />
             </span>
@@ -147,7 +147,7 @@ export default function InsightsPage() {
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm shadow-zinc-200/60">
+        <div className="surface-card p-6">
           <h2 className="text-sm font-semibold text-zinc-900">
             คำค้นยอดนิยม
             <span className="ml-2 text-xs font-normal text-zinc-400">
@@ -184,7 +184,7 @@ export default function InsightsPage() {
           </ul>
         </div>
 
-        <div className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm shadow-zinc-200/60">
+        <div className="surface-card p-6">
           <h2 className="text-sm font-semibold text-zinc-900">
             ช่องว่างข้อมูล
             <span className="ml-2 text-xs font-normal text-zinc-400">
@@ -223,7 +223,7 @@ export default function InsightsPage() {
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm shadow-zinc-200/60">
+        <div className="surface-card p-6">
           <h2 className="text-sm font-semibold text-zinc-900">การค้นหา 14 วันล่าสุด</h2>
           <div className="mt-4 flex h-32 items-end gap-1">
             {data.perDay.map((d, i) => (
@@ -244,7 +244,7 @@ export default function InsightsPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm shadow-zinc-200/60">
+        <div className="surface-card p-6">
           <h2 className="text-sm font-semibold text-zinc-900">
             โมดูลที่โดน Customize บ่อยที่สุด
           </h2>

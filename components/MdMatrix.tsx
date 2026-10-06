@@ -25,7 +25,7 @@ const CATEGORY_ROLE: Record<string, Partial<Record<Level, string>>> = {
 };
 // Matches the Fun/Dev color families already used for the pill views
 // elsewhere (lib/format.ts MD_ROLE_COLOR) so this reads as the same system.
-const CATEGORY_COLOR: Record<string, string> = { Fun: "text-sky-600", Dev: "text-violet-600" };
+const CATEGORY_DOT: Record<string, string> = { Fun: "bg-sky-500", Dev: "bg-violet-500" };
 
 interface MdMatrixProps {
   breakdown: MdBreakdown | Partial<Record<string, number | null | undefined>> | null;
@@ -53,27 +53,26 @@ export default function MdMatrix({ breakdown: breakdownProp, className }: MdMatr
 
   return (
     <div
-      className={`inline-block overflow-hidden rounded-lg border border-zinc-100 bg-white shadow-sm shadow-zinc-100 ${className ?? ""}`}
+      className={`inline-block max-w-full overflow-hidden rounded-lg border border-slate-200/80 bg-white text-left ${className ?? ""}`}
     >
       {usedCategories.length > 0 && (
         <div
-          className="grid text-xs"
-          style={{ gridTemplateColumns: `auto repeat(${usedLevels.length}, minmax(2.75rem, 1fr))` }}
+          className="grid text-xs tabular-nums"
+          style={{ gridTemplateColumns: `auto repeat(${usedLevels.length}, minmax(3rem, 1fr))` }}
         >
-          <div className="border-b border-zinc-100 bg-zinc-50/80" />
+          <div className="bg-slate-50 px-2.5 py-1" />
           {usedLevels.map((lvl) => (
             <div
               key={lvl}
-              className="flex items-center justify-center border-b border-zinc-100 bg-zinc-50/80 px-2.5 py-1 text-center font-medium whitespace-nowrap text-zinc-400"
+              className="bg-slate-50 px-2.5 py-1 text-center text-[10px] font-semibold tracking-wide whitespace-nowrap text-slate-400 uppercase"
             >
               {LEVEL_LABEL[lvl]}
             </div>
           ))}
-          {usedCategories.map((cat, i) => (
+          {usedCategories.map((cat) => (
             <Fragment key={cat}>
-              <div
-                className={`flex items-center px-2.5 py-1 font-semibold whitespace-nowrap ${CATEGORY_COLOR[cat] ?? "text-zinc-500"} ${i > 0 ? "border-t border-zinc-100" : ""}`}
-              >
+              <div className="flex items-center gap-1.5 border-t border-slate-100 px-2.5 py-1.5 font-semibold whitespace-nowrap text-slate-700">
+                <span className={`h-1.5 w-1.5 rounded-full ${CATEGORY_DOT[cat] ?? "bg-slate-400"}`} />
                 {cat}
               </div>
               {usedLevels.map((lvl) => {
@@ -82,9 +81,9 @@ export default function MdMatrix({ breakdown: breakdownProp, className }: MdMatr
                 return (
                   <div
                     key={lvl}
-                    className={`flex items-center justify-center px-2.5 py-1 text-center font-medium text-zinc-700 ${i > 0 ? "border-t border-zinc-100" : ""}`}
+                    className="border-t border-slate-100 px-2.5 py-1.5 text-center font-medium text-slate-800"
                   >
-                    {v ?? <span className="font-normal text-zinc-300">–</span>}
+                    {v ?? <span className="font-normal text-slate-300">–</span>}
                   </div>
                 );
               })}
@@ -92,13 +91,17 @@ export default function MdMatrix({ breakdown: breakdownProp, className }: MdMatr
           ))}
         </div>
       )}
-      {extras.length > 0 && (
-        <p
-          className={`px-2.5 py-1 text-[10px] text-zinc-400 ${usedCategories.length > 0 ? "border-t border-zinc-100 bg-zinc-50/80" : ""}`}
+      {extras.map((e, i) => (
+        <div
+          key={e.label}
+          className={`flex items-center justify-between gap-4 bg-slate-50/70 px-2.5 py-1.5 text-[11px] whitespace-nowrap tabular-nums ${
+            usedCategories.length > 0 || i > 0 ? "border-t border-slate-100" : ""
+          }`}
         >
-          {extras.map((e) => `${e.label}: ${e.value} MD`).join(" · ")}
-        </p>
-      )}
+          <span className="text-slate-500">{e.label}</span>
+          <span className="font-semibold text-slate-700">{e.value} MD</span>
+        </div>
+      ))}
     </div>
   );
 }

@@ -117,8 +117,8 @@ export default function ItemsPage() {
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="page-header">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="page-header min-w-0 flex-1 basis-72">
           <span className="icon-badge h-11 w-11 shrink-0">
             <List size={20} />
           </span>
@@ -135,12 +135,12 @@ export default function ItemsPage() {
                 ...(category && { category }),
                 ...(project && { project }),
               }).toString()}`}
-              className="btn btn-secondary flex-1 sm:flex-none"
+              className="btn btn-secondary"
             >
               <Download size={15} />
               Export
             </a>
-            <button onClick={() => setShowAddForm(true)} className="btn btn-primary flex-1 sm:flex-none">
+            <button onClick={() => setShowAddForm(true)} className="btn btn-primary">
               <Plus size={15} />
               เพิ่มรายการใหม่
             </button>

@@ -18,7 +18,7 @@ function ProjectTags({ project }: { project: string | null }) {
   return (
     <span className="flex flex-wrap gap-1">
       {names.map((name) => (
-        <span key={name} className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+        <span key={name} className="badge badge-neutral">
           {name}
         </span>
       ))}
@@ -58,14 +58,14 @@ function ResultCard({
     <div className="surface-card surface-card-hover fade-up p-4" style={{ animationDelay: `${Math.min(index, 8) * 50}ms` }}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2 text-xs text-zinc-500">
-          <span className="rounded bg-zinc-100 px-2 py-0.5 font-medium text-zinc-600">
+          <span className="badge badge-neutral rounded-md">
             {m.module ?? "-"}
           </span>
           <span>
             {MODE_LABEL[m.source_type]} · No.{m.item_no ?? "-"}
           </span>
         </div>
-        <span className="whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-100">
+        <span className="badge badge-success">
           ใกล้เคียง {(m.similarity * 100).toFixed(0)}%
         </span>
       </div>
@@ -86,7 +86,7 @@ function ResultCard({
           {m.cost != null ? (
             <span className="font-medium text-zinc-700">{m.cost.toLocaleString()}</span>
           ) : (
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-100">
+            <span className="badge badge-warn">
               ไม่มีราคา STD
             </span>
           )}

@@ -408,7 +408,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          <div className="mt-6 rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm shadow-zinc-200/60">
+          <div className="mt-6 surface-card p-5">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
               <History size={15} />
               ประวัติการแก้ไขอัตรา

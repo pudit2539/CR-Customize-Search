@@ -1,13 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, IBM_Plex_Sans_Thai, Inter } from "next/font/google";
 import AppShell from "@/components/AppShell";
 import ToastProvider from "@/components/ToastProvider";
 import { getSessionFromCookies } from "@/lib/session";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Inter for Latin/numerals, IBM Plex Sans Thai for Thai glyphs — the stack
+// falls through per-character, so mixed Thai/English text stays in one
+// consistent corporate typeface instead of the browser's default Thai font.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+});
+
+const plexThai = IBM_Plex_Sans_Thai({
+  variable: "--font-plex-thai",
+  subsets: ["thai", "latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -30,9 +39,9 @@ export default async function RootLayout({
   return (
     <html
       lang="th"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${plexThai.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-gradient-to-br from-slate-50 via-red-50/20 to-slate-100 text-zinc-900">
+      <body className="min-h-full text-zinc-900">
         <ToastProvider>
           {session ? (
             <AppShell session={session}>{children}</AppShell>
